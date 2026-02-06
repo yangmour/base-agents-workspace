@@ -1,30 +1,34 @@
 {
-  "workspace": "../agents-workspace",
-  "backend": ".",
-  "frontend": "../agents-frontend",
-  "middleware": "./本地开发",
+  "workspace": "../../../base-agents-workspace",
+  "backend": "../../../base-module",
+  "frontend": "../../../node-base-module/weixin-bot-admin",
+  "middleware": "../../../base-module/本地开发",
 
-  "_comment": "项目路径配置说明 - 使用相对路径",
+  "_comment": "项目路径配置说明 - 使用相对于 fullstack-dev 技能书的相对路径",
   "_note": {
-    "workspace": "工作空间路径（相对于当前项目，可选）",
-    "backend": "后端项目根目录（当前项目，使用 .）",
-    "frontend": "前端项目路径（相对于当前项目）",
-    "middleware": "本地开发环境路径（相对于后端项目根目录）"
+    "workspace": "工作空间路径（规范、文档、技能书）",
+    "backend": "后端项目根目录（Java 微服务）",
+    "frontend": "前端项目路径（Vue 3 应用）",
+    "middleware": "本地开发环境路径（Docker 中间件）"
   },
 
   "_directory_structure": {
-    "recommended": [
-      "~/projects/",
-      "  ├── agents-backend/          # 当前项目（后端）",
-      "  ├── agents-frontend/         # 前端项目（待创建）",
-      "  └── agents-workspace/        # 工作空间（可选）"
+    "current": [
+      "~/projects/agents-dfe5077d34/",
+      "  ├── base-agents-workspace/   # 工作空间（规范、文档、技能书）",
+      "  │   └── skills/",
+      "  │       └── fullstack-dev/   # 当前技能书位置",
+      "  ├── base-module/             # 后端项目（Java 微服务）",
+      "  └── node-base-module/        # 前端项目容器",
+      "      └── weixin-bot-admin/    # Vue 3 前端应用"
     ]
   },
 
   "_setup_instructions": {
-    "step1": "当前项目作为后端项目，无需移动",
-    "step2": "在同级目录创建前端项目：cd ../; pnpm create vue@latest agents-frontend",
-    "step3": "可选：创建工作空间目录：mkdir ../agents-workspace",
-    "step4": "路径会根据技能书所在位置自动解析"
+    "info": "当前配置已适配实际目录结构",
+    "backend_path": "相对路径: ../../../base-module",
+    "frontend_path": "相对路径: ../../../node-base-module/weixin-bot-admin",
+    "middleware_path": "相对路径: ../../../base-module/本地开发",
+    "verification": "从技能书位置 (base-agents-workspace/skills/fullstack-dev) 算起"
   }
 }
