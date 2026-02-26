@@ -1,0 +1,66 @@
+{
+  "version": "1.0",
+  "lastUpdate": "2026-02-26T14:45:00",
+  "skills": {
+    "git-commit-convention": {
+      "name": "Git提交规范",
+      "usageCount": 1,
+      "lastUsed": "2026-02-26T14:28:00",
+      "records": [
+        {
+          "id": 1,
+          "timestamp": "2026-02-26T14:28:00",
+          "trigger": "用户请求提交代码",
+          "method": "auto",
+          "result": "success",
+          "details": "使用约定式提交格式创建 commit，应用 Git 提交规范",
+          "relatedFiles": [".claude/skills/Git提交规范/SKILL.md"],
+          "commitHash": "1309078"
+        }
+      ]
+    },
+    "java-microservice": {
+      "name": "Java微服务开发",
+      "usageCount": 0,
+      "lastUsed": null,
+      "records": []
+    },
+    "fullstack-development": {
+      "name": "全栈开发规范",
+      "usageCount": 0,
+      "lastUsed": null,
+      "records": []
+    },
+    "frontend-design": {
+      "name": "前端设计",
+      "usageCount": 0,
+      "lastUsed": null,
+      "records": []
+    },
+    "technical-documentation": {
+      "name": "技术文档编写",
+      "usageCount": 0,
+      "lastUsed": null,
+      "records": []
+    },
+    "document-editing": {
+      "name": "文档编辑规范",
+      "usageCount": 0,
+      "lastUsed": null,
+      "records": []
+    },
+    "project-standards": {
+      "name": "项目规范",
+      "usageCount": 0,
+      "lastUsed": null,
+      "records": []
+    }
+  },
+  "summary": {
+    "totalUsage": 1,
+    "activeSkills": 1,
+    "totalSkills": 7,
+    "coverageRate": 14.3,
+    "lastRecordId": 1
+  }
+}
