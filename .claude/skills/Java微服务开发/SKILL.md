@@ -1,11 +1,16 @@
 ---
 name: java-microservice
-description: 后端Java微服务开发指南。触发场景：开发Spring Boot服务、实现Controller/Service/Mapper、使用MyBatis-Plus操作数据库、集成Redis缓存/分布式锁、创建Feign客户端、使用base-*公共模块（base-basic/base-redis/base-knife4j等）。不适用于前端开发、前后端联调。
+description: 后端Java微服务开发指南。触发场景：写接口、测试接口、创建接口、写Service、创建Service、业务逻辑、写Mapper、创建Mapper、查询数据库、操作数据库、数据访问层、开发Spring Boot服务、实现Controller/Service/Mapper、使用MyBatis-Plus操作数据库、集成Redis缓存/分布式锁、创建Feign客户端、使用base-*公共模块（base-basic/base-redis/base-knife4j等）。不适用于前端开发、前后端联调。
 ---
 
 # Java 微服务开发
 
-> **提示词触发场景**：当用户提到"创建微服务"、"Spring Boot"、"REST API"、"Feign客户端"、"MyBatis-Plus"、"Redis缓存"、"分布式锁"、"API文档"等关键词时，使用此技能。
+> **提示词触发场景**：当用户提到以下关键词时，使用此技能：
+> - **Controller层**："写接口"、"测试接口"、"创建接口"、"Controller"、"API"、"REST API"
+> - **Service层**："写Service"、"创建Service"、"业务逻辑"、"业务层"
+> - **Mapper层**："写Mapper"、"创建Mapper"、"数据访问层"、"DAO"、"查询数据库"、"操作数据库"
+> - **框架相关**："Spring Boot"、"MyBatis-Plus"、"Feign客户端"、"Redis缓存"、"分布式锁"
+> - **实体类**："Entity"、"实体类"、"DTO"、"VO"、"PO"
 
 本技能提供在此项目中开发 Spring Boot 微服务的指南，遵循已建立的模式和规范。
 
