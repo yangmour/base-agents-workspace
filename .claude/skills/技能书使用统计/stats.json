@@ -1,11 +1,11 @@
 {
   "version": "1.0",
-  "lastUpdate": "2026-02-26T14:45:00",
+  "lastUpdate": "2026-02-26T15:00:00",
   "skills": {
     "git-commit-convention": {
       "name": "Git提交规范",
-      "usageCount": 1,
-      "lastUsed": "2026-02-26T14:28:00",
+      "usageCount": 2,
+      "lastUsed": "2026-02-26T15:00:00",
       "records": [
         {
           "id": 1,
@@ -16,6 +16,22 @@
           "details": "使用约定式提交格式创建 commit，应用 Git 提交规范",
           "relatedFiles": [".claude/skills/Git提交规范/SKILL.md"],
           "commitHash": "1309078"
+        },
+        {
+          "id": 2,
+          "timestamp": "2026-02-26T15:00:00",
+          "trigger": "用户请求提交技能书使用统计功能",
+          "method": "auto",
+          "result": "success",
+          "details": "使用约定式提交格式创建 commit，类型为 feat(skills)，包含详细的实现内容说明",
+          "relatedFiles": [
+            ".claude/skills/技能书使用统计/SKILL.md",
+            ".claude/skills/技能书使用统计/stats.json",
+            ".claude/skills/技能书使用统计/references/record-template.md",
+            ".claude/skills/技能书使用统计/references/usage-guide.md",
+            ".claude/skills/技能书使用统计/references/analysis-guide.md"
+          ],
+          "commitHash": "d96b857"
         }
       ]
     },
@@ -57,10 +73,10 @@
     }
   },
   "summary": {
-    "totalUsage": 1,
+    "totalUsage": 2,
     "activeSkills": 1,
     "totalSkills": 7,
     "coverageRate": 14.3,
-    "lastRecordId": 1
+    "lastRecordId": 2
   }
 }
