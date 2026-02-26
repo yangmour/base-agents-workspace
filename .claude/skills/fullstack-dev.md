@@ -16,8 +16,7 @@ description: 全栈开发规范 - 同时开发前后端功能时使用此技能�
 
 ### 2. 统一响应格式
 
-- **所有 API（公开/内部）**：统一使用 `RI.ok(data)` 返回
-- **响应式 API（WebFlux）**：使用 `RS.ok(data)` 返回
+- **所有 API（公开/内部/响应式）**：统一使用 `RI.ok(data)` 返回
 - **前端接收**：使用 `ApiResponse<T>` 接口
 
 **字段映射**：
@@ -149,6 +148,24 @@ public class InnerUserController implements UserFeignClient {
         log.info("[内部调用] 批量查询用户: ids={}", ids);
         List<UserDTO> users = userService.getByIds(ids);
         return RI.ok(users);
+    }
+}
+```
+
+**2.5 响应式接口（WebFlux）**
+```java
+// 注意：响应式接口也使用 RI<T>，不使用 RS<T>
+@RestController
+@RequestMapping("/api/messages")
+@RequiredArgsConstructor
+public class MessageController {
+
+    private final MessageService messageService;
+
+    @PostMapping("/send")
+    public RI<MessageDTO> sendMessage(@Valid @RequestBody SendMessageRequest request) {
+        MessageDTO message = messageService.sendMessage(request);
+        return RI.ok(message);  // ← 响应式服务也使用 RI.ok
     }
 }
 ```
@@ -604,8 +621,7 @@ try {
 
 | 响应类 | 使用场景 | 返回方法 | 示例 |
 |--------|----------|----------|------|
-| **RI<T>** | 所有 API（公开/内部） | `RI.ok(data)` | `return RI.ok(user);` |
-| **RS<T>** | 响应式 API（WebFlux） | `RS.ok(data)` | `return RS.ok(user);` |
+| **RI<T>** | 所有 API（公开/内部/响应式） | `RI.ok(data)` | `return RI.ok(user);` |
 
 
 ### 前端接收
@@ -627,7 +643,6 @@ export interface ApiResponse<T = any> {
 ### 后端
 - **路径**：`base-module/server/{服务名}/`
 - **API 响应**：`RI.ok(data)` - `base-module/common/base-basic/.../RI.java`
-- **响应式响应**：`RS.ok(data)` - `base-module/common/base-basic/.../RS.java`
 - **分页**：`PageResult<T>` - MyBatis Plus Page
 - **文档**：Knife4j - `http://localhost:{port}/doc.html`
 
@@ -751,7 +766,6 @@ public class CorsConfig {
 - **项目规范**：使用 `project-conventions` skill 查看项目约定
 - **后端响应类**：
   - `base-module/common/base-basic/src/main/java/com/xiwen/basic/response/RI.java`
-  - `base-module/common/base-basic/src/main/java/com/xiwen/basic/response/RS.java`
 - **前端请求封装**：`node-base-module/base-admin-web/src/utils/request.ts`
 - **跨域配置**：`base-module/server/api-gateway/src/main/java/com/xiwen/gateway/config/CorsConfig.java`
 - **示例代码**：

@@ -22,7 +22,7 @@ description: 前后端接口约定 - 定义前后端接口规范、数据格式�
 ### 后端响应类型
 
 #### RI<T> - 统一 API 响应
-**使用场景**：所有接口（公开 API、内部 Feign API）
+**使用场景**：所有接口（公开 API、内部 Feign API、响应式 WebFlux API）
 
 **Java 定义**：
 ```java
@@ -61,29 +61,11 @@ return RI.f("操作失败", errorDetails);
   "traceId": "abc-123-def-456"
 }
 ```
-#### RS<T> - 响应式 API 响应
-**使用场景**：Spring WebFlux 响应式接口（如网关、IM 服务）
 
-**Java 定义**：
-```java
-public class RS<T> {
-    private Integer code;    // 状态码
-    private String message;  // 消息
-    private T data;          // 数据
-}
-```
-
-**使用方法**：
-```java
-// 成功响应
-return RS.ok(data);
-
-// 在 Mono/Flux 中使用
-return Mono.just(RS.ok(data));
-
-// 流式响应
-return Flux.fromIterable(list).map(RS::ok);
-```
+**注意事项**：
+- ✅ 所有 API（公开/内部/响应式）统一使用 `RI<T>`
+- ✅ 包括 WebFlux 响应式接口也使用 `RI<T>`，不使用 `RS<T>`
+- ✅ 简化统一，避免混淆
 
 ### 前端类型定义
 
@@ -114,8 +96,8 @@ export interface PageResult<T = any> {
 
 | 状态码 | 含义 | 使用场景 | 后端实现 |
 |--------|------|----------|----------|
-| **200** | 成功 | 请求成功处理 | `CodeType.SUCCESS` |
-| **600** | 业务异常 | 业务逻辑错误（用户可理解） | `CodeType.BUSINESS_ERROR` |
+| **200** | 成功 | 请求成功处理 | `CodeType.SUCCESS` / `RI.ok()` |
+| **600** | 业务异常 | 业务逻辑错误（用户可理解） | `CodeType.BUSINESS_ERROR` / `RI.f()` |
 | **500** | 系统异常 | 系统内部错误（不可预期） | `CodeType.SYSTEM_ERROR` |
 | **401** | 未授权 | Token 无效或过期 | `CodeType.UNAUTHORIZED` |
 | **403** | 禁止访问 | 无权限访问 | `CodeType.FORBIDDEN` |
@@ -742,6 +724,4 @@ public class UserDTO {
 - **后端开发**：使用 `java-microservice` skill 查看 Java 微服务开发指南
 - **项目规范**：使用 `project-conventions` skill 查看项目约定
 - **响应类源码**：
-  - `base-module/common/base-basic/.../R.java`
   - `base-module/common/base-basic/.../RI.java`
-  - `base-module/common/base-basic/.../RS.java`
