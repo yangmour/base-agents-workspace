@@ -1,6 +1,6 @@
 ---
 name: java-microservice
-description: Java微服务开发指南 - 遵循项目规范开发Spring Boot微服务。用于创建新微服务、实现REST API、添加Feign客户端、配置Spring Cloud组件,或使用项目的公共模块（base-basic、base-redis、base-knife4j等）时使用此技能。
+description: 后端Java微服务开发指南。触发场景：开发Spring Boot服务、实现Controller/Service/Mapper、使用MyBatis-Plus操作数据库、集成Redis缓存/分布式锁、创建Feign客户端、使用base-*公共模块（base-basic/base-redis/base-knife4j等）。不适用于前端开发、前后端联调。
 ---
 
 # Java 微服务开发
