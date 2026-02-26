@@ -16,14 +16,13 @@ description: 全栈开发规范 - 同时开发前后端功能时使用此技能�
 
 ### 2. 统一响应格式
 
-- **公开 API（外部接口）**：使用 `RI.ok(data)` 返回
-- **内部 API（Feign 接口）**：使用 `RI.ok(data)` 返回
-- **响应式 API（WebFlux）**：使用 `RI.ok(data)` 返回
+- **所有 API（公开/内部）**：统一使用 `RI.ok(data)` 返回
+- **响应式 API（WebFlux）**：使用 `RS.ok(data)` 返回
 - **前端接收**：使用 `ApiResponse<T>` 接口
 
 **字段映射**：
 ```
-后端 RI.java           前端 ApiResponse
+后端 RI.java          前端 ApiResponse
 code   (200)      →   code   (200)
 msg    (String)   →   message (string)
 data   (T)        →   data    (T)
@@ -115,7 +114,7 @@ public class UserController {
     public RI<PageResult<UserDTO>> listUsers(UserQueryRequest request) {
         log.info("查询用户列表: {}", request);
         PageResult<UserDTO> result = userService.listUsers(request);
-        return RI.ok(result);  // ← 公开 API 使用 RI.ok
+        return RI.ok(result);  // ← 使用 RI.ok
     }
 
     @Operation(summary = "创建用户", description = "创建新用户")
@@ -123,7 +122,7 @@ public class UserController {
     public RI<UserDTO> createUser(@Valid @RequestBody UserCreateRequest request) {
         log.info("创建用户: {}", request);
         UserDTO user = userService.createUser(request);
-        return RI.ok(user);
+        return RI.ok(user);  // ← 使用 RI.ok
     }
 }
 ```
@@ -397,7 +396,7 @@ http://localhost:5173/user/list
 public RI<UserDTO> createUser(@Valid @RequestBody UserCreateRequest request) {
     log.info("创建用户: {}", request);
     UserDTO user = userService.createUser(request);
-    return RI.ok(user);  // ← 使用 RI.ok()
+    return RI.ok(user);  // ← 使用 RI.ok
 }
 ```
 
@@ -603,12 +602,10 @@ try {
 
 ### 后端响应类型
 
-| 响应类       | 使用场景           | 返回方法          | 示例                    |
-|-----------|----------------|---------------|-----------------------|
-| **RI<T>** | 内部 API（Feign 接口） | `RI.ok(data)` | `return RI.ok(user);` |
-| **RI<T>** | 响应式 API（WebFlux） | `RI.ok(data)` | `return RI.ok(user);` |
-| **RI<T>** | 外部 API（外部接口）   | `RI.ok(data)` | `return RI.ok(user);` |
-| **RS<T>** | 通用兜底 API（接口）   | `RS.ok(data)` | `return RS.ok(user);` |
+| 响应类 | 使用场景 | 返回方法 | 示例 |
+|--------|----------|----------|------|
+| **RI<T>** | 所有 API（公开/内部） | `RI.ok(data)` | `return RI.ok(user);` |
+| **RS<T>** | 响应式 API（WebFlux） | `RS.ok(data)` | `return RS.ok(user);` |
 
 
 ### 前端接收
@@ -629,8 +626,8 @@ export interface ApiResponse<T = any> {
 
 ### 后端
 - **路径**：`base-module/server/{服务名}/`
-- **公开 API 响应**：`RI.ok(data)` - `base-module/common/base-basic/.../RI.java`
-- **内部 API 响应**：`RI.ok(data)` - `base-module/common/base-basic/.../RI.java`
+- **API 响应**：`RI.ok(data)` - `base-module/common/base-basic/.../RI.java`
+- **响应式响应**：`RS.ok(data)` - `base-module/common/base-basic/.../RS.java`
 - **分页**：`PageResult<T>` - MyBatis Plus Page
 - **文档**：Knife4j - `http://localhost:{port}/doc.html`
 
@@ -652,8 +649,8 @@ export interface ApiResponse<T = any> {
 - 避免使用 `any` 类型
 
 ### 2. 接口分层
-- **公开 API**：`/api/v1/**` - 使用 `RI.ok()`
-- **内部 API**：`/inner/**` - 使用 `RI.ok()`
+- **公开 API**：`/api/v1/**` - 使用 `RI.ok(data)`
+- **内部 API**：`/inner/**` - 使用 `RI.ok(data)`
 - 不要在公开 API 中暴露内部接口
 
 ### 3. 错误处理

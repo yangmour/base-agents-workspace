@@ -21,32 +21,32 @@ description: 前后端接口约定 - 定义前后端接口规范、数据格式�
 
 ### 后端响应类型
 
-#### 1. R<?, T> - 公开 API 响应
-**使用场景**：外部接口（前端调用、第三方调用）
+#### RI<T> - 统一 API 响应
+**使用场景**：所有接口（公开 API、内部 Feign API）
 
 **Java 定义**：
 ```java
-public class R<T, D> {
-    private T code;      // 状态码
-    private String msg;  // 消息
-    private D data;      // 数据
-    private String traceId; // 链路追踪 ID
+public class RI<D> extends R<Integer, D> {
+    private Integer code;    // 状态码
+    private String msg;      // 消息
+    private D data;          // 数据
+    private String traceId;  // 链路追踪 ID
 }
 ```
 
 **使用方法**：
 ```java
 // 成功响应
-return R.commonOk(data);
+return RI.ok(data);
 
-// 成功响应（带自定义消息）
-return R.commonOk("操作成功", data);
+// 成功响应（无数据）
+return RI.ok();
 
 // 失败响应
-return R.fail("操作失败");
+return RI.f("操作失败");
 
 // 失败响应（带数据）
-return R.fail("操作失败", errorDetails);
+return RI.f("操作失败", errorDetails);
 ```
 
 **响应示例**：
@@ -61,44 +61,7 @@ return R.fail("操作失败", errorDetails);
   "traceId": "abc-123-def-456"
 }
 ```
-
-#### 2. RI<T> - 内部 API 响应
-**使用场景**：微服务间 Feign 调用
-
-**Java 定义**：
-```java
-public class RI<T> {
-    private Integer code;    // 状态码
-    private String message;  // 消息
-    private T data;          // 数据
-}
-```
-
-**使用方法**：
-```java
-// 成功响应
-return RI.ok(data);
-
-// 成功响应（无数据）
-return RI.ok();
-
-// 失败响应
-return RI.fail("内部调用失败");
-```
-
-**响应示例**：
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "userId": 1,
-    "username": "zhangsan"
-  }
-}
-```
-
-#### 3. RS<T> - 响应式 API 响应
+#### RS<T> - 响应式 API 响应
 **使用场景**：Spring WebFlux 响应式接口（如网关、IM 服务）
 
 **Java 定义**：
@@ -253,41 +216,41 @@ public class UserController {
 
     // 查询列表
     @GetMapping
-    public R<?, PageResult<UserDTO>> listUsers(UserQueryRequest request) {
-        return R.commonOk(userService.listUsers(request));
+    public RI<PageResult<UserDTO>> listUsers(UserQueryRequest request) {
+        return RI.ok(userService.listUsers(request));
     }
 
     // 查询详情
     @GetMapping("/{id}")
-    public R<?, UserDTO> getUser(@PathVariable Long id) {
-        return R.commonOk(userService.getById(id));
+    public RI<UserDTO> getUser(@PathVariable Long id) {
+        return RI.ok(userService.getById(id));
     }
 
     // 创建
     @PostMapping
-    public R<?, UserDTO> createUser(@Valid @RequestBody UserCreateRequest request) {
-        return R.commonOk(userService.createUser(request));
+    public RI<UserDTO> createUser(@Valid @RequestBody UserCreateRequest request) {
+        return RI.ok(userService.createUser(request));
     }
 
     // 更新（全量）
     @PutMapping("/{id}")
-    public R<?, UserDTO> updateUser(@PathVariable Long id,
+    public RI<UserDTO> updateUser(@PathVariable Long id,
                                      @Valid @RequestBody UserUpdateRequest request) {
-        return R.commonOk(userService.updateUser(id, request));
+        return RI.ok(userService.updateUser(id, request));
     }
 
     // 更新（部分）
     @PatchMapping("/{id}")
-    public R<?, UserDTO> patchUser(@PathVariable Long id,
+    public RI<UserDTO> patchUser(@PathVariable Long id,
                                     @RequestBody Map<String, Object> updates) {
-        return R.commonOk(userService.patchUser(id, updates));
+        return RI.ok(userService.patchUser(id, updates));
     }
 
     // 删除
     @DeleteMapping("/{id}")
-    public R<?, Void> deleteUser(@PathVariable Long id) {
+    public RI<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
-        return R.commonOk(null);
+        return RI.ok(null);
     }
 }
 ```
@@ -614,7 +577,7 @@ export function fromNow(date: string | Date): string {
 ```java
 @PostMapping("/upload")
 @Operation(summary = "文件上传")
-public R<?, FileUploadResponse> uploadFile(@RequestParam("file") MultipartFile file) {
+public RI<FileUploadResponse> uploadFile(@RequestParam("file") MultipartFile file) {
     if (file.isEmpty()) {
         throw new BizException("文件不能为空");
     }
@@ -631,7 +594,7 @@ public R<?, FileUploadResponse> uploadFile(@RequestParam("file") MultipartFile f
     }
 
     FileUploadResponse response = fileService.uploadFile(file);
-    return R.commonOk(response);
+    return RI.ok(response);
 }
 ```
 
@@ -742,7 +705,7 @@ public class UserController {
         description = "分页查询用户列表，支持关键词搜索"
     )
     @GetMapping
-    public R<?, PageResult<UserDTO>> listUsers(
+    public RI<PageResult<UserDTO>> listUsers(
         @Parameter(description = "查询参数", required = true)
         UserQueryRequest request
     ) {
