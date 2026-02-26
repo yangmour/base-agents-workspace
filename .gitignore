@@ -3,6 +3,10 @@ base-module/
 node-base-module/
 base-agents-workspace/
 
+# 但保留 Claude Code 配置
+!.claude/
+!CLAUDE.md
+
 # IDE
 .idea/
 .vscode/
