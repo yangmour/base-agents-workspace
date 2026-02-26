@@ -18,6 +18,7 @@ description: 全栈开发规范 - 同时开发前后端功能时使用此技能�
 
 - **所有 API（公开/内部/响应式）**：统一使用 `RI.ok(data)` 返回
 - **前端接收**：使用 `ApiResponse<T>` 接口
+- **详细规范**：参考 `project-conventions` skill 查看完整响应格式标准
 
 **字段映射**：
 ```
@@ -612,29 +613,6 @@ try {
 - [ ] **列出** 前端受影响文件清单
 - [ ] 更新所有受影响的页面和组件
 - [ ] 回归测试
-
----
-
-## 响应格式对比
-
-### 后端响应类型
-
-| 响应类 | 使用场景 | 返回方法 | 示例 |
-|--------|----------|----------|------|
-| **RI<T>** | 所有 API（公开/内部/响应式） | `RI.ok(data)` | `return RI.ok(user);` |
-
-
-### 前端接收
-
-```typescript
-// 所有后端响应统一映射为 ApiResponse<T>
-export interface ApiResponse<T = any> {
-  code: number          // 状态码：200 成功，600 业务异常，500 系统异常
-  message: string       // 消息
-  data: T              // 数据
-  timestamp?: number   // 时间戳（可选）
-}
-```
 
 ---
 

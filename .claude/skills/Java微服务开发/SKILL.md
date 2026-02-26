@@ -1,6 +1,6 @@
 ---
 name: java-microservice
-description: Java微服务开发指南 - 遵循项目规范开发Spring Boot微服务。用于创建新微服务、实现REST API、添加Feign客户端、配置Spring Cloud组件，或使用项目的公共模块（base-basic、base-redis、base-knife4j等）时使用此技能。
+description: Java微服务开发指南 - 遵循项目规范开发Spring Boot微服务。用于创建新微服务、实现REST API、添加Feign客户端、配置Spring Cloud组件,或使用项目的公共模块（base-basic、base-redis、base-knife4j等）时使用此技能。
 ---
 
 # Java 微服务开发
@@ -36,21 +36,25 @@ base-module/
 - Feign客户端独立模块，便于其他服务依赖
 
 ### 2. 统一响应格式
-- 公开 API 使用 `R<T>` 封装
-- 内部 Feign 使用 `RI<T>` 封装
-- 响应式接口使用 `RS<T>` 封装（网关）
+**所有 API 统一使用 `RI<T>` 封装**
 
 ```java
 // 公开 API
 @PostMapping("/login")
-public R<TokenResponse> login(@RequestBody LoginRequest request) {
-    return R.ok(response);
+public RI<TokenResponse> login(@RequestBody LoginRequest request) {
+    return RI.ok(response);
 }
 
 // 内部 Feign
 @Override
 public RI<UserDTO> getUser(@PathVariable Long id) {
     return RI.ok(user);
+}
+
+// 响应式接口（WebFlux）
+@PostMapping("/send")
+public RI<MessageDTO> sendMessage(@RequestBody SendMessageRequest request) {
+    return RI.ok(message);
 }
 ```
 
@@ -78,7 +82,7 @@ if (user == null) {
 4. 创建 `Application` 主类
 5. 实现业务逻辑
 
-**详细指南**：参考 [创建新微服务完整指南](references/create-new-service.md)
+**详细指南**：参考 [references/create-service.md](references/create-service.md)
 
 ### 必需依赖
 ```xml
@@ -101,20 +105,6 @@ if (user == null) {
 </dependency>
 ```
 
-### 配置示例
-```yaml
-# bootstrap-local.yml
-spring:
-  application:
-    name: your-service
-  cloud:
-    nacos:
-      discovery:
-        server-addr: localhost:8848
-server:
-  port: 8082
-```
-
 ---
 
 ## 公共模块
@@ -127,17 +117,17 @@ server:
 | base-knife4j-webflux | API文档（Swagger增强） - WebFlux版 | Spring WebFlux服务需要文档时 |
 | base-feignClients | Feign客户端集合 | 调用其他服务时 |
 
-**详细使用指南**：参考 [公共模块使用指南](references/common-modules-guide.md)
+**详细使用指南**：参考 [references/common-modules.md](references/common-modules.md)
 
 ### 快速示例
 
 #### 使用响应封装
 ```java
 // 成功响应
-return R.ok(data);
+return RI.ok(data);
 
 // 失败响应
-return R.fail("错误信息");
+return RI.f("错误信息");
 
 // 抛出异常（推荐）
 throw new BizException("业务错误");
@@ -180,9 +170,9 @@ public class BusinessController {
 
     @Operation(summary = "查询业务", description = "根据ID查询业务详情")
     @GetMapping("/{id}")
-    public R<BusinessDTO> getById(@PathVariable Long id) {
+    public RI<BusinessDTO> getById(@PathVariable Long id) {
         log.info("查询业务: id={}", id);
-        return R.ok(businessService.getById(id));
+        return RI.ok(businessService.getById(id));
     }
 }
 ```
@@ -209,7 +199,7 @@ public class BusinessService {
 }
 ```
 
-**详细实现模式**：参考 [REST API 实现模式](references/rest-api-patterns.md)，包含：
+**详细实现模式**：参考 [references/rest-api-patterns.md](references/rest-api-patterns.md)，包含：
 - CRUD 标准实现
 - 参数校验
 - 复杂查询
@@ -260,7 +250,7 @@ public class BusinessInnerController implements BusinessFeignClient {
 }
 ```
 
-**详细指南**：参考 [公共模块使用指南 - Feign客户端部分](references/common-modules-guide.md#base-feignclients---feign-客户端模块)
+**详细指南**：参考 [references/common-modules.md - Feign客户端部分](references/common-modules.md#feign-客户端)
 
 ---
 
@@ -299,7 +289,7 @@ public class BusinessInnerController implements BusinessFeignClient {
 ### 1. 日志规范
 ```java
 // 入口日志
-log.info("用户登录: username={}, businessLine={}", username, businessLine);
+log.info("用户登录: username={}, businessLine={}, clientType={}", username, businessLine, clientType);
 
 // 错误日志
 log.error("登录失败: username={}, reason={}", username, e.getMessage(), e);
@@ -330,9 +320,8 @@ public void updateUser(User user) {
 
 ## 参考资源
 
-- **[创建新微服务完整指南](references/create-new-service.md)** - 详细的服务创建步骤、配置、常见问题
-- **[公共模块使用指南](references/common-modules-guide.md)** - base-basic、base-redis、base-knife4j、base-feignClients 详细使用
-- **[Knife4j WebFlux 完整指南](references/knife4j-webflux-guide.md)** - WebFlux 响应式服务的 API 文档配置与使用
+- **[公共模块使用指南](references/common-modules.md)** - base-basic、base-redis、base-knife4j、base-feignClients 详细使用
 - **[REST API 实现模式](references/rest-api-patterns.md)** - CRUD、参数校验、异常处理、批量操作、文件处理
+- **[创建新微服务指南](references/create-service.md)** - 详细的服务创建步骤、配置、常见问题
 - **项目规范** - 使用 `project-conventions` skill 查看架构原则和编码标准
 - **示例代码** - 参考 `server/auth-center/`、`server/im-service/`（WebFlux）和 `server/examples/` 目录

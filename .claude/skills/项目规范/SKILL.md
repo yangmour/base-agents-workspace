@@ -30,22 +30,21 @@ description: 项目特定的规范、架构模式和编码标准。用于在此�
 
 ## 响应格式标准
 
-### 公开 API（外部接口）
-使用 `R<T>` 封装响应：
+### 统一响应格式
+**所有 API（公开/内部/响应式）统一使用 `RI<T>` 封装响应**
+
 ```java
+// 公开 API
 @RestController
 @RequestMapping("/api")
 public class PublicController {
     @PostMapping("/login")
-    public R<TokenResponse> login(@RequestBody LoginRequest request) {
-        return R.ok(response);
+    public RI<TokenResponse> login(@RequestBody LoginRequest request) {
+        return RI.ok(response);
     }
 }
-```
 
-### 内部 API（Feign接口）
-使用 `RI<T>` 封装响应：
-```java
+// 内部 Feign API
 @RestController
 @RequestMapping("/inner")
 public class InnerController implements SomeFeignClient {
@@ -54,14 +53,15 @@ public class InnerController implements SomeFeignClient {
         return RI.ok(user);
     }
 }
-```
 
-### 响应式接口（网关）
-使用 `RS<T>` 封装响应：
-```java
-@GetMapping("/stream")
-public Mono<RS<DataDTO>> streamData() {
-    return Mono.just(RS.ok(data));
+// 响应式接口（WebFlux）
+@RestController
+@RequestMapping("/api/stream")
+public class StreamController {
+    @GetMapping("/data")
+    public RI<DataDTO> streamData() {
+        return RI.ok(data);
+    }
 }
 ```
 
@@ -71,9 +71,16 @@ public Mono<RS<DataDTO>> streamData() {
   "code": 200,
   "msg": "success",
   "data": { ... },
-  "timestamp": 1706342400000
+  "traceId": "abc-123-def-456"
 }
 ```
+
+### 状态码说明
+- **200**: 成功
+- **600**: 业务异常（BizException）
+- **500**: 系统异常
+- **401**: 未授权
+- **403**: 禁止访问
 
 ---
 
@@ -385,6 +392,69 @@ userMapper.selectOne(new LambdaQueryWrapper<User>()
 ### 连接池
 - 数据库连接池：HikariCP
 - Redis连接池：Lettuce
+
+---
+
+## API 设计规范
+
+### RESTful 风格
+
+**URL 设计原则**：
+- 使用名词复数表示资源：`/api/v1/users`
+- 使用 HTTP 方法表示操作：GET/POST/PUT/DELETE
+- 路径层级表示资源关系：`/api/v1/users/123/orders`
+- 查询参数用于筛选：`?pageNum=1&pageSize=10&keyword=zhang`
+
+**HTTP 方法语义**：
+| 方法 | 语义 | 幂等性 | 示例 |
+|------|------|--------|------|
+| GET | 查询 | ✅ 是 | `/api/v1/users` |
+| POST | 创建 | ❌ 否 | `/api/v1/users` |
+| PUT | 更新（全量） | ✅ 是 | `/api/v1/users/123` |
+| PATCH | 更新（部分） | ❌ 否 | `/api/v1/users/123` |
+| DELETE | 删除 | ✅ 是 | `/api/v1/users/123` |
+
+### 命名规范
+
+**后端命名**：
+- Controller 路径：`/api/v1/users`（小写复数）
+- DTO 命名：`UserDTO`, `UserQueryRequest`, `UserCreateRequest`
+- Service 方法：`getById()`, `listUsers()`, `createUser()`
+
+**前端命名**：
+- API 函数：`listUsers()`, `getUserById()`, `createUser()`
+- 类型定义：与后端 DTO 完全一致
+
+### 分页规范
+
+**请求参数**：
+- `pageNum`: 当前页（从 1 开始）
+- `pageSize`: 每页条数
+
+**响应数据**：
+```java
+public class PageResult<T> {
+    private List<T> list;      // 数据列表
+    private Long total;        // 总记录数
+    private Integer pageNum;   // 当前页
+    private Integer pageSize;  // 每页条数
+}
+```
+
+### 接口文档
+
+使用 Knife4j (Swagger增强版)：
+```java
+@Tag(name = "用户管理", description = "用户相关接口")
+@RestController
+public class UserController {
+    @Operation(summary = "创建用户", description = "创建新用户")
+    @PostMapping("/users")
+    public RI<UserDTO> create(@RequestBody UserRequest request) {
+        // ...
+    }
+}
+```
 
 ---
 
