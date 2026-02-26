@@ -16,7 +16,7 @@ base/                              ← 在此目录启动 Claude Code
 │   │   ├── springAiAlibaba/      ← 阿里 AI 服务
 │   │   └── examples/             ← 示例服务
 │   └── common/                    ← 公共模块
-│       ├── base-basic/           ← 基础模块（含统一响应类 R）
+│       ├── base-basic/           ← 基础模块（含统一响应类 RI）
 │       ├── base-redis/           ← Redis 模块
 │       ├── base-rabbitmq/        ← RabbitMQ 模块
 │       ├── base-feignClients/     ← Feign 客户端
@@ -38,10 +38,10 @@ base/                              ← 在此目录启动 Claude Code
 5. 更新 Knife4j 接口文档（如有）
 
 ### 前端调用时注意：
-- **统一响应格式**：后端使用 `R<T, D>` 类，前端使用 `ApiResponse<T>` 接口
+- **统一响应格式**：后端使用 `RI<D>` 类，前端使用 `ApiResponse<T>` 接口
 - **响应结构**：
   ```java
-  // 后端 R.java
+  // 后端 RI.java
   {
     "code": 200,           // 成功为 200，业务异常为 600，系统异常为 500
     "msg": "success",      // 消息
@@ -61,7 +61,7 @@ base/                              ← 在此目录启动 Claude Code
 - **前端类型定义位置**：`node-base-module/base-admin-web/src/types/api.d.ts`
 - **前端请求封装位置**：`node-base-module/base-admin-web/src/utils/request.ts`
 - **后端 Controller 位置**：`base-module/server/{服务名}/src/main/java/com/xiwen/server/{服务名}/controller/`
-- **后端统一响应类**：`base-module/common/base-basic/src/main/java/com/xiwen/basic/response/R.java`
+- **后端统一响应类**：`base-module/common/base-basic/src/main/java/com/xiwen/basic/response/RI.java`
 
 ### 开发流程
 - **新增接口时**：同时给出后端 Controller + 前端 TypeScript 类型 + 前端 API 调用示例
@@ -159,7 +159,7 @@ npm run dev
 ### 1. 前后端接口对接
 - **问题**：后端返回数据格式与前端期望不一致
 - **解决**：
-  1. 检查后端是否使用 `R.commonOk(data)` 返回
+  1. 检查后端是否使用 `RI.ok(data)` 返回
   2. 检查前端 `types/api.d.ts` 类型定义是否匹配
   3. 使用 Knife4j 查看实际接口响应
 
