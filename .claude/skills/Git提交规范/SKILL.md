@@ -160,13 +160,21 @@ Resolves #345
 
 ## 项目特殊规范
 
-### Claude Code 标记（必须）
+### 提交标记（必须）
 
-本项目所有提交必须添加以下标记：
+**本项目所有提交必须且只能添加以下标记：**
 
 ```
 🤖
 ```
+
+**严格要求**：
+- ✅ 只使用 `🤖` 表情符号
+- ❌ 不使用 `Generated with [Claude Code](https://claude.com/claude-code)`
+- ❌ 不使用 `Co-Authored-By: Claude <noreply@anthropic.com>`
+- ❌ 不添加任何其他标记或链接
+
+**重要**：当使用 Claude Code 帮助提交时，必须遵循此规范，不得添加额外的 Claude Code 标记。
 
 ### 完整提交示例
 
@@ -182,6 +190,8 @@ feat(auth): 添加多因素认证功能
 EOF
 )"
 ```
+
+**注意**：提交信息末尾只有 `🤖`，没有其他任何内容。
 
 ---
 
