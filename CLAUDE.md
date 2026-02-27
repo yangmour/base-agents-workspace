@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # 全栈项目说明
 
 ## 项目结构
@@ -154,6 +158,138 @@ npm run dev
 - 前端：http://localhost:5173（默认 Vite 端口）
 - API 文档：http://localhost:{服务端口}/doc.html（Knife4j）
 
+## 开发命令
+
+### 后端常用命令
+```bash
+# 构建整个项目（必须指定版本）
+cd base-module
+mvn clean install -Drevision=1.0
+
+# 构建跳过测试
+mvn clean install -Drevision=1.0 -DskipTests
+
+# 只构建特定模块
+cd base-module/server/auth-center
+mvn clean install -Drevision=1.0
+
+# 启动服务
+cd base-module/server/{服务名}
+mvn spring-boot:run
+
+# 打包为可执行 jar
+mvn package -Drevision=1.0
+```
+
+### 前端常用命令
+```bash
+cd node-base-module/base-admin-web
+
+# 安装依赖
+npm install
+
+# 开发模式（支持热重载）
+npm run dev
+
+# 类型检查
+npm run type-check
+
+# 构建生产版本
+npm run build
+
+# 预览生产构建
+npm run preview
+```
+
+## Skills 技能系统
+
+本项目使用 `.claude/skills/` 技能系统来规范开发流程。开发时应根据任务类型选择对应技能：
+
+### 何时使用各技能
+
+1. **Java微服务开发** (`java-microservice`)
+   - 写接口、创建 Controller/Service/Mapper
+   - 使用 MyBatis-Plus 操作数据库
+   - 集成 Redis 缓存或分布式锁
+   - 创建 Feign 客户端
+   - **不适用于**：前端开发、前后端联调
+
+2. **全栈开发规范** (`fullstack-development`)
+   - 实现完整功能（后端 + 前端）
+   - 新增/修改 API 接口（需同步前端 TS 类型）
+   - 前后端对接问题排查
+   - **核心职责**：确保 RI<T> 响应格式统一、TypeScript 类型与 Java DTO 同步
+
+3. **项目规范** (`project-conventions`)
+   - 查询响应格式标准（RI<T> 结构和状态码）
+   - 了解认证授权流程（Token/权限/业务线隔离）
+   - 查询数据库表设计规范
+   - 查询命名规范和代码规范
+
+4. **Git提交规范** (`Git提交规范`)
+   - 使用约定式提交（Conventional Commits）格式
+   - 提交代码时使用此技能生成规范的 commit 信息
+
+5. **文档编辑规范** (`文档编辑规范`)
+   - 数据库变更时生成 SQL 迁移文件（Vx__xxx.sql）
+   - 修改应用配置时更新 CHANGELOG_CONFIG.md
+   - 编写回滚脚本
+
+### Skills 使用原则
+- **单一职责**：根据任务选择最匹配的技能，避免混用
+- **优先级**：全栈功能优先使用 `fullstack-development`，纯后端使用 `java-microservice`
+- **配合使用**：`project-conventions` 可与其他技能配合，作为规范参考
+
+## 核心架构模式
+
+### 1. 公共模块（common/）使用规范
+- **base-basic**: 统一响应类 `RI<T>`、异常处理 `BizException`、通用过滤器
+- **base-redis**: Redis 缓存封装、分布式锁、缓存注解
+- **base-rabbitmq**: RabbitMQ 消息队列封装
+- **base-feignClients**: Feign 客户端接口定义
+- **base-knife4j**: Knife4j API 文档配置（Spring MVC）
+- **base-knife4j-webflux**: Knife4j 配置（Spring WebFlux）
+
+### 2. 服务分类
+- **传统 MVC 服务**: auth-center, examples
+- **响应式服务（WebFlux）**: api-gateway, im-service, file-service
+  - 注意：WebFlux 服务使用 `base-knife4j-webflux` 而非 `base-knife4j`
+
+### 3. 统一响应处理
+所有接口（公开/内部/响应式）统一使用 `RI<T>` 封装：
+```java
+// 位置：base-module/common/base-basic/src/main/java/com/xiwen/basic/response/RI.java
+
+// 成功响应
+return RI.ok(data);
+
+// 业务异常（600）
+throw new BizException("业务异常信息");
+
+// 分页响应
+return RI.ok(PageResult.of(list, total, pageNum, pageSize));
+```
+
+### 4. 数据库变更管理
+- SQL 迁移文件位置：`base-module/docs/sql/`
+- 命名规范：`Vx__description.sql`（x 为递增版本号）
+- 回滚脚本：`rollback/Vx__rollback.sql`
+- 变更记录：维护 `CHANGELOG_DATABASE.md`
+
+### 5. Feign 客户端模式
+```java
+// 1. 在 base-feignClients/{服务名}-feignClient 定义接口
+@FeignClient(name = "auth-center", path = "/internal/user")
+public interface UserFeignClient {
+    @GetMapping("/{id}")
+    RI<UserDTO> getUser(@PathVariable Long id);
+}
+
+// 2. 其他服务依赖此模块并注入使用
+@Autowired
+private UserFeignClient userFeignClient;
+```
+
 ## 常见问题
 
 ### 1. 前后端接口对接
@@ -170,3 +306,40 @@ npm run dev
 ### 3. Token 认证
 - **前端**：Token 存储在 localStorage，每次请求自动添加到 `Authorization` header
 - **后端**：使用 Spring Security + JWT，通过认证中心验证 Token
+
+### 4. Maven 构建问题
+- **问题**：构建失败，提示版本号未定义
+- **解决**：必须使用 `-Drevision=1.0` 参数指定版本号
+  ```bash
+  mvn clean install -Drevision=1.0
+  ```
+
+### 5. WebFlux vs MVC
+- **问题**：引入 Knife4j 后服务启动失败
+- **解决**：
+  - MVC 服务使用：`base-knife4j`
+  - WebFlux 服务使用：`base-knife4j-webflux`
+  - 两者不可混用
+
+## 重要开发约定
+
+### 接口修改检查清单
+修改后端接口时，必须完成以下步骤：
+1. ✅ 修改后端 Controller 和 DTO/VO
+2. ✅ 更新前端 TypeScript 类型（`node-base-module/base-admin-web/src/types/api.d.ts`）
+3. ✅ 更新前端 API 调用函数（如需要）
+4. ✅ 使用 Knife4j 测试接口
+5. ✅ 列出前端受影响的页面和组件
+6. ✅ 更新 Knife4j 接口文档注解
+
+### Nacos 配置要求
+- 命名空间：`3fb4b580-22e9-408a-a497-a7534f2c2365`
+- 服务地址：`service-nacos.develop:8848`
+- 配置 Group：`DEFAULT_GROUP`
+- Profile：`nacos-dev`（默认激活）
+
+### 业务线隔离规则
+- 支持多业务线：MALL（商城）、EDUCATION（教育）、COMMON（通用）
+- 同一手机号可在不同业务线注册
+- 用户权限按业务线隔离
+- 数据查询需携带业务线标识
