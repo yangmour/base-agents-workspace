@@ -71,7 +71,41 @@ if (user == null) {
 }
 ```
 
-### 4. 策略模式
+### 4. DTO/Request/VO 严格分离
+**核心规范**：**dto只放dto，vo只放vo，实体只放实体，请求只放请求实体**
+
+- **Entity（实体）**: 仅在服务内部使用，映射数据库表
+- **Request（请求）**: 用于接收客户端请求参数
+- **VO（视图对象）**: 用于返回响应数据给前端
+- **DTO（传输对象）**: 用于服务间 Feign 调用传输
+
+**详细规范**：参考 [references/dto-vo-separation.md](references/dto-vo-separation.md)
+
+**快速示例**：
+```java
+// Controller 层：使用 Request 接收，返回 VO
+@PostMapping
+public RI<Long> createRole(@RequestBody @Valid RoleCreateRequest request) {
+    Role role = new Role();
+    BeanUtils.copyProperties(request, role);  // Request → Entity
+    Role created = roleService.createRole(role);
+    return RI.ok(created.getId());
+}
+
+@GetMapping("/{id}")
+public RI<RoleVO> getRoleById(@PathVariable Long id) {
+    Role role = roleService.getById(id);  // Entity（内部使用）
+    return RI.ok(VoConverter.toRoleVO(role));  // Entity → VO
+}
+
+// ❌ 错误：不要直接返回 Entity
+@GetMapping("/{id}")
+public RI<Role> getRole(@PathVariable Long id) {
+    return RI.ok(roleService.getById(id));  // ❌ 暴露了数据库字段
+}
+```
+
+### 5. 策略模式
 复杂业务逻辑使用策略模式，参考 `auth-center` 的登录策略实现。
 
 ---

@@ -64,11 +64,15 @@ server/.../OrderController.java →  src/api/order.ts           →  src/views/o
 定义接口规范（路径、请求参数、响应数据）
 
 ### 步骤 2：后端实现
-1. 创建 DTO（UserDTO、UserQueryRequest）
+1. **严格分层**：创建 Request/VO（**dto只放dto，vo只放vo，实体只放实体，请求只放请求实体**）
+   - Request: 接收请求参数（如 `UserCreateRequest`）
+   - VO: 返回响应数据（如 `UserVO`）
+   - Entity: 仅内部使用（如 `User`）
+   - 详细规范：参考 Java微服务开发技能书的 `references/dto-vo-separation.md`
 2. 创建 Controller（公开 API）
 3. 创建 Inner Controller（内部 Feign API，如需要）
 4. 实现 Service 业务逻辑
-5. 使用 `RI.ok(data)` 返回
+5. 使用 `RI.ok(data)` 返回（data 必须是 VO，不能是 Entity）
 
 ### 步骤 3：前端实现
 1. 定义 TypeScript 类型（types/api.d.ts）
