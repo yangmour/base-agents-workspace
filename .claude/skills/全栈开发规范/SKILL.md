@@ -46,7 +46,7 @@ public RI<MessageDTO> sendMessage(@RequestBody SendMessageRequest request) {
 code   (200)      →   code   (200)
 msg    (String)   →   message (string)
 data   (T)        →   data    (T)
-traceId (String)  →   timestamp (number, 可选)
+traceId (String)  →   traceId (string)
 ```
 
 ### 3. 文件对应关系

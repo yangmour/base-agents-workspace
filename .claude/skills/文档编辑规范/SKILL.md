@@ -477,7 +477,7 @@ fi
 
 ### 模板文件
 - [SQL文件模板](templates/sql-template.sql)
-- [回滚脚本模板](templates/rollback-template.sql)
+- [回滚脚本模板（使用 SQL 文件模板并保留回滚段）](templates/sql-template.sql)
 - [配置变更记录模板](templates/CHANGELOG_CONFIG.md)
 
 ### 工具脚本
@@ -489,5 +489,4 @@ fi
 **最后更新**: 2025-01-28  
 **维护人员**: 开发团队  
 **版本**: v2.0
-
 
