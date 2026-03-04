@@ -155,6 +155,7 @@ public RI<Role> getRole(@PathVariable Long id) {
 | base-knife4j | API文档（Swagger增强） - MVC版 | Spring MVC服务需要文档时 |
 | base-knife4j-webflux | API文档（Swagger增强） - WebFlux版 | Spring WebFlux服务需要文档时 |
 | base-feignClients | Feign客户端集合 | 调用其他服务时 |
+| file-feignClient | 文件服务Feign客户端 | 需要文件上传/下载功能时 |
 
 **详细使用指南**：参考 [references/common-modules.md](references/common-modules.md)
 
@@ -290,6 +291,250 @@ public class BusinessInnerController implements BusinessFeignClient {
 ```
 
 **详细指南**：参考 [references/common-modules.md - Feign客户端部分](references/common-modules.md#feign-客户端)
+
+---
+
+## 文件服务集成
+
+### 何时使用文件服务
+- 用户头像上传
+- 商品图片上传
+- 附件管理（订单、报告等）
+- 任何需要存储和管理文件的场景
+
+### 集成步骤
+
+#### 1. 添加依赖
+```xml
+<dependency>
+    <groupId>com.xiwen</groupId>
+    <artifactId>file-feignClient</artifactId>
+</dependency>
+```
+
+#### 2. 注入 FileFeignClient
+```java
+@Service
+@RequiredArgsConstructor
+public class UserService {
+
+    private final FileFeignClient fileFeignClient;
+    private final UserMapper userMapper;
+
+    // 业务逻辑...
+}
+```
+
+#### 3. 常用操作示例
+
+**生成上传凭证**（给前端使用）：
+```java
+@PostMapping("/upload-credential")
+@Operation(summary = "获取头像上传凭证")
+public RI<UploadCredentialDTO> getUploadCredential(@RequestBody UploadCredentialRequest request) {
+    // 1. 设置上传参数
+    request.setBusinessType("avatar");
+    request.setBusinessId("user_" + currentUserId);
+
+    // 2. 调用文件服务获取凭证
+    RI<UploadCredentialDTO> result = fileFeignClient.generateUploadCredential("user", request);
+
+    // 3. 返回给前端（前端使用 uploadUrl 直传，成功后保存 fileKey）
+    return result;
+}
+```
+
+**保存 fileKey 到业务数据**：
+```java
+@PutMapping("/avatar")
+@Operation(summary = "更新用户头像")
+public RI<Void> updateAvatar(@RequestBody UpdateAvatarRequest request) {
+    // 1. 验证文件是否存在
+    RI<FileInfoDTO> fileResult = fileFeignClient.getFileInfo("user", request.getFileKey());
+    if (fileResult.getCode() != 200) {
+        throw new BizException("文件不存在");
+    }
+
+    // 2. 更新用户头像 fileKey
+    User user = userMapper.selectById(currentUserId);
+    user.setAvatarFileKey(request.getFileKey());
+    userMapper.updateById(user);
+
+    return RI.ok();
+}
+```
+
+**获取文件下载 URL**：
+```java
+@GetMapping("/{id}/avatar")
+@Operation(summary = "获取用户头像URL")
+public RI<String> getUserAvatar(@PathVariable Long id) {
+    // 1. 查询用户头像 fileKey
+    User user = userMapper.selectById(id);
+    if (user.getAvatarFileKey() == null) {
+        return RI.f("用户未设置头像");
+    }
+
+    // 2. 生成下载 URL（有效期 1 小时）
+    RI<String> result = fileFeignClient.generateDownloadUrl("user", user.getAvatarFileKey(), 3600);
+
+    return result;
+}
+```
+
+**批量获取下载 URL**（性能优化）：
+```java
+@GetMapping("/list")
+@Operation(summary = "查询用户列表（含头像）")
+public RI<List<UserVO>> listUsers() {
+    // 1. 查询用户列表
+    List<User> users = userMapper.selectList(null);
+
+    // 2. 收集所有 fileKey
+    List<Long> fileKeys = users.stream()
+        .map(User::getAvatarFileKey)
+        .filter(Objects::nonNull)
+        .distinct()
+        .collect(Collectors.toList());
+
+    // 3. 批量获取下载 URL（避免 N+1 查询）
+    RI<Map<Long, String>> urlMapResult = fileFeignClient.batchGenerateDownloadUrlsMap("user", fileKeys, 3600);
+    Map<Long, String> urlMap = urlMapResult.getData();
+
+    // 4. 组装 VO
+    List<UserVO> voList = users.stream().map(user -> {
+        UserVO vo = new UserVO();
+        BeanUtils.copyProperties(user, vo);
+        vo.setAvatarUrl(urlMap.get(user.getAvatarFileKey()));
+        return vo;
+    }).collect(Collectors.toList());
+
+    return RI.ok(voList);
+}
+```
+
+**删除文件**：
+```java
+@DeleteMapping("/avatar")
+@Operation(summary = "删除用户头像")
+public RI<Void> deleteAvatar() {
+    // 1. 查询当前用户
+    User user = userMapper.selectById(currentUserId);
+    if (user.getAvatarFileKey() == null) {
+        return RI.f("用户未设置头像");
+    }
+
+    // 2. 删除文件（同时删除存储和数据库记录）
+    fileFeignClient.deleteFile("user", user.getAvatarFileKey());
+
+    // 3. 清除用户头像 fileKey
+    user.setAvatarFileKey(null);
+    userMapper.updateById(user);
+
+    return RI.ok();
+}
+```
+
+### 最佳实践
+
+#### 1. moduleCode 命名规范
+- 使用业务域名：`user`、`product`、`order`
+- 小写字母，多个单词用短横线连接：`order-refund`
+
+#### 2. businessType 使用约定
+- 明确业务类型：`avatar`（头像）、`image`（图片）、`attachment`（附件）
+- 便于统计和管理不同类型的文件
+
+#### 3. fileKey 存储
+- 使用 Long 类型（雪花 ID）
+- 数据库字段命名：`{业务}_file_key`（如 `avatar_file_key`）
+- 可为空：文件字段通常是可选的
+
+#### 4. 性能优化
+- **批量操作**：使用 `batchGenerateDownloadUrls` 避免 N+1 查询
+- **缓存 URL**：下载 URL 有效期内可缓存（默认 1 小时）
+- **异步处理**：大文件上传完成后的后续处理（如生成缩略图）可异步执行
+
+#### 5. 错误处理
+```java
+// 校验文件是否存在
+RI<FileInfoDTO> fileResult = fileFeignClient.getFileInfo("user", fileKey);
+if (fileResult.getCode() != 200) {
+    throw new BizException("文件不存在或已删除");
+}
+
+// 校验文件大小
+FileInfoDTO fileInfo = fileResult.getData();
+if (fileInfo.getFileSize() > 5 * 1024 * 1024) {  // 5MB
+    throw new BizException("文件大小超过限制");
+}
+
+// 校验文件类型
+if (!fileInfo.getMimeType().startsWith("image/")) {
+    throw new BizException("仅支持图片格式");
+}
+```
+
+### 完整流程示例
+
+**场景**：用户上传头像
+
+```java
+// 1. 前端调用：获取上传凭证
+@PostMapping("/api/v1/users/avatar/upload-credential")
+public RI<UploadCredentialDTO> getAvatarUploadCredential(@RequestBody UploadCredentialRequest request) {
+    request.setBusinessType("avatar");
+    request.setBusinessId("user_" + SecurityUtils.getCurrentUserId());
+    return fileFeignClient.generateUploadCredential("user", request);
+}
+
+// 2. 前端使用 uploadUrl 直传到存储服务（不经过后端）
+
+// 3. 前端上传成功后，调用保存接口
+@PutMapping("/api/v1/users/avatar")
+public RI<UserVO> updateAvatar(@RequestBody UpdateAvatarRequest request) {
+    // 3.1 验证文件
+    RI<FileInfoDTO> fileResult = fileFeignClient.getFileInfo("user", request.getFileKey());
+    if (fileResult.getCode() != 200) {
+        throw new BizException("文件不存在");
+    }
+
+    FileInfoDTO fileInfo = fileResult.getData();
+
+    // 3.2 校验文件类型和大小
+    if (!fileInfo.getMimeType().startsWith("image/")) {
+        throw new BizException("仅支持图片格式");
+    }
+    if (fileInfo.getFileSize() > 5 * 1024 * 1024) {
+        throw new BizException("图片大小不能超过5MB");
+    }
+
+    // 3.3 删除旧头像（如果存在）
+    Long userId = SecurityUtils.getCurrentUserId();
+    User user = userMapper.selectById(userId);
+    if (user.getAvatarFileKey() != null) {
+        fileFeignClient.deleteFile("user", user.getAvatarFileKey());
+    }
+
+    // 3.4 更新用户头像
+    user.setAvatarFileKey(request.getFileKey());
+    userMapper.updateById(user);
+
+    // 3.5 返回用户信息（含头像 URL）
+    UserVO vo = convertToVO(user);
+    RI<String> urlResult = fileFeignClient.generateDownloadUrl("user", user.getAvatarFileKey(), 3600);
+    vo.setAvatarUrl(urlResult.getData());
+
+    return RI.ok(vo);
+}
+```
+
+### 注意事项
+- **fileKey 类型**：使用 `Long`（雪花 ID），不是 String
+- **上传凭证有效期**：默认 1 小时，前端需处理超时重新获取
+- **文件删除**：业务数据删除时，记得同时删除关联的文件
+- **权限控制**：验证当前用户是否有权限操作该文件
+- **前端直传**：不要让文件流经后端，使用预签名 URL 直传到存储服务
 
 ---
 

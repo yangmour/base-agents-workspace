@@ -209,6 +209,238 @@ onMounted(() => handleQuery())
 **后端**：抛出 `BizException` → `GlobalExceptionHandler` → `RI` 响应
 **前端**：拦截器自动处理 code !== 200 → 显示错误消息
 
+### 场景 5：文件上传（完整流程）
+**步骤**：后端生成上传凭证 → 前端直传到存储服务 → 后端保存 fileKey → 前端显示文件
+
+**后端实现**：
+```java
+// 1. 生成上传凭证接口
+@PostMapping("/api/v1/users/avatar/upload-credential")
+@Operation(summary = "获取头像上传凭证")
+public RI<UploadCredentialDTO> getAvatarUploadCredential(@RequestBody UploadCredentialRequest request) {
+    // 设置业务参数
+    request.setBusinessType("avatar");
+    request.setBusinessId("user_" + SecurityUtils.getCurrentUserId());
+
+    // 调用文件服务
+    return fileFeignClient.generateUploadCredential("user", request);
+}
+
+// 2. 保存 fileKey 接口
+@PutMapping("/api/v1/users/avatar")
+@Operation(summary = "更新用户头像")
+public RI<UserVO> updateAvatar(@RequestBody UpdateAvatarRequest request) {
+    // 验证文件是否存在
+    RI<FileInfoDTO> fileResult = fileFeignClient.getFileInfo("user", request.getFileKey());
+    if (fileResult.getCode() != 200) {
+        throw new BizException("文件不存在");
+    }
+
+    // 校验文件类型和大小
+    FileInfoDTO fileInfo = fileResult.getData();
+    if (!fileInfo.getMimeType().startsWith("image/")) {
+        throw new BizException("仅支持图片格式");
+    }
+    if (fileInfo.getFileSize() > 5 * 1024 * 1024) {
+        throw new BizException("图片大小不能超过5MB");
+    }
+
+    // 更新用户头像
+    Long userId = SecurityUtils.getCurrentUserId();
+    User user = userMapper.selectById(userId);
+    user.setAvatarFileKey(request.getFileKey());
+    userMapper.updateById(user);
+
+    // 返回用户信息（含头像 URL）
+    UserVO vo = convertToVO(user);
+    RI<String> urlResult = fileFeignClient.generateDownloadUrl("user", user.getAvatarFileKey(), 3600);
+    vo.setAvatarUrl(urlResult.getData());
+
+    return RI.ok(vo);
+}
+
+// 3. Request/VO 定义
+@Data
+public class UploadCredentialRequest {
+    @NotBlank(message = "文件名不能为空")
+    private String fileName;
+
+    @NotBlank(message = "文件类型不能为空")
+    private String contentType;
+
+    @NotNull(message = "文件大小不能为空")
+    private Long fileSize;
+
+    private String businessType;  // 由后端设置
+    private String businessId;    // 由后端设置
+}
+
+@Data
+public class UpdateAvatarRequest {
+    @NotNull(message = "文件键不能为空")
+    private Long fileKey;
+}
+
+@Data
+public class UserVO {
+    private Long id;
+    private String username;
+    private String nickname;
+    private String avatarUrl;  // 头像下载 URL（临时）
+    private LocalDateTime createTime;
+}
+```
+
+**前端实现**：
+```typescript
+// types/api.d.ts
+export interface UploadCredentialRequest {
+  fileName: string
+  contentType: string
+  fileSize: number
+}
+
+export interface UploadCredentialDTO {
+  fileKey: number
+  uploadUrl: string
+  method: string
+  formFields?: Record<string, string>
+  expiresAt: string
+  objectKey: string
+  needCallback: boolean
+  callbackUrl?: string
+}
+
+export interface UpdateAvatarRequest {
+  fileKey: number
+}
+
+export interface UserVO {
+  id: number
+  username: string
+  nickname: string
+  avatarUrl?: string
+  createTime: string
+}
+
+// api/user.ts
+export function getAvatarUploadCredential(data: UploadCredentialRequest): Promise<ApiResponse<UploadCredentialDTO>> {
+  return post<UploadCredentialDTO>('/api/v1/users/avatar/upload-credential', data)
+}
+
+export function updateAvatar(data: UpdateAvatarRequest): Promise<ApiResponse<UserVO>> {
+  return put<UserVO>('/api/v1/users/avatar', data)
+}
+```
+
+```vue
+<!-- views/user/avatar-upload.vue -->
+<script setup lang="ts">
+import { ref } from 'vue'
+import { ElMessage, ElUpload } from 'element-plus'
+import { getAvatarUploadCredential, updateAvatar } from '@/api/user'
+import type { UploadCredentialDTO, UserVO } from '@/types/api'
+import axios from 'axios'
+
+const uploading = ref(false)
+const avatarUrl = ref<string>('')
+
+const handleUpload = async (file: File) => {
+  uploading.value = true
+
+  try {
+    // Step 1: 获取上传凭证
+    const credentialRes = await getAvatarUploadCredential({
+      fileName: file.name,
+      contentType: file.type,
+      fileSize: file.size
+    })
+
+    if (credentialRes.code !== 200) {
+      ElMessage.error('获取上传凭证失败')
+      return
+    }
+
+    const credential: UploadCredentialDTO = credentialRes.data
+
+    // Step 2: 使用预签名 URL 直传到存储服务
+    await axios.put(credential.uploadUrl, file, {
+      headers: {
+        'Content-Type': file.type
+      }
+    })
+
+    // Step 3: 保存 fileKey 到用户数据
+    const updateRes = await updateAvatar({
+      fileKey: credential.fileKey
+    })
+
+    if (updateRes.code === 200) {
+      avatarUrl.value = updateRes.data.avatarUrl || ''
+      ElMessage.success('头像上传成功')
+    }
+  } catch (error) {
+    console.error('上传失败:', error)
+    ElMessage.error('上传失败，请重试')
+  } finally {
+    uploading.value = false
+  }
+}
+
+const beforeUpload = (file: File) => {
+  // 验证文件类型
+  const isImage = file.type.startsWith('image/')
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件')
+    return false
+  }
+
+  // 验证文件大小
+  const isLt5M = file.size / 1024 / 1024 < 5
+  if (!isLt5M) {
+    ElMessage.error('图片大小不能超过 5MB')
+    return false
+  }
+
+  // 手动处理上传
+  handleUpload(file)
+  return false  // 阻止 el-upload 自动上传
+}
+</script>
+
+<template>
+  <div class="avatar-upload">
+    <el-upload
+      :before-upload="beforeUpload"
+      :show-file-list="false"
+      :disabled="uploading"
+    >
+      <el-avatar :src="avatarUrl" :size="100" />
+      <div class="upload-hint">点击上传头像</div>
+    </el-upload>
+  </div>
+</template>
+
+<style scoped>
+.avatar-upload {
+  text-align: center;
+}
+
+.upload-hint {
+  margin-top: 8px;
+  color: #999;
+  font-size: 12px;
+}
+</style>
+```
+
+**关键点**：
+1. **后端**：依赖 `file-feignClient`，调用文件服务生成凭证和验证文件
+2. **前端**：使用预签名 URL 直传，不经过后端（减轻服务器压力）
+3. **类型安全**：fileKey 使用 `Long` 类型（后端）和 `number` 类型（前端）
+4. **错误处理**：前端验证文件类型/大小，后端二次验证确保安全
+5. **URL 有效期**：下载 URL 默认 1 小时有效，需要时重新生成
+
 **详细场景实现**：参考 [references/common-scenarios.md](references/common-scenarios.md)
 
 ---

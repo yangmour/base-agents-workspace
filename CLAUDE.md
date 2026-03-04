@@ -81,12 +81,17 @@ base/                              ← 在此目录启动 Claude Code
 
 ### 代码位置对应关系
 
-| 后端服务 | 后端 Controller 路径 | 前端 API 函数 | 前端页面 |
-|---------|----------------------|--------------|----------|
-| auth-center | `server/auth-center/src/main/java/com/xiwen/server/auth/controller/` | 暂无独立目录 | 登录页、用户管理 |
-| file-service | `server/file-service/src/main/java/com/xiwen/server/file/controller/` | 暂无独立目录 | 文件上传、文件列表 |
-| weixin-bot | `server/weixin-bot/src/main/java/com/xiwen/server/weixinbot/controller/` | 暂无独立目录 | 机器人管理 |
-| api-gateway | `server/api-gateway/src/main/java/com/xiwen/server/gateway/` | - | 网关配置 |
+| 后端服务 | 后端 Controller 路径 | Feign 客户端 | 前端页面 | 功能说明 |
+|---------|----------------------|--------------|----------|---------|
+| auth-center | `server/auth-center/src/main/java/com/xiwen/server/auth/controller/` | 暂无 | 登录页、用户管理 | 认证授权、用户管理 |
+| file-service | `server/file-service/src/main/java/com/xiwen/server/file/controller/inner/` | `file-feignClient` | 文件上传、文件列表 | 文件上传/下载/删除、模块配置管理 |
+| weixin-bot | `server/weixin-bot/src/main/java/com/xiwen/server/weixinbot/controller/` | 暂无 | 机器人管理 | 微信机器人服务 |
+| api-gateway | `server/api-gateway/src/main/java/com/xiwen/server/gateway/` | - | 网关配置 | 统一网关路由 |
+
+**file-service 接口说明**：
+- `/inner/file/*`：文件管理接口（生成上传凭证、查询文件、下载 URL、删除、分页查询、统计）
+- `/inner/file/module/*`：模块配置接口（创建、更新、删除、查询模块配置）
+- 调用方式：通过 `FileFeignClient` 内网调用（不直接暴露给前端）
 
 ### 通用约定
 - **错误码定义**：
@@ -247,6 +252,8 @@ npm run preview
 - **base-redis**: Redis 缓存封装、分布式锁、缓存注解
 - **base-rabbitmq**: RabbitMQ 消息队列封装
 - **base-feignClients**: Feign 客户端接口定义
+  - **file-feignClient**: 文件服务 Feign 客户端（上传凭证、文件查询、下载 URL、删除、模块管理）
+  - **ai-feignClient**: AI 服务 Feign 客户端
 - **base-knife4j**: Knife4j API 文档配置（Spring MVC）
 - **base-knife4j-webflux**: Knife4j 配置（Spring WebFlux）
 
@@ -290,6 +297,39 @@ public interface UserFeignClient {
 private UserFeignClient userFeignClient;
 ```
 
+**文件服务 Feign 客户端使用示例**：
+```java
+// 1. 添加依赖（在业务服务的 pom.xml）
+<dependency>
+    <groupId>com.xiwen</groupId>
+    <artifactId>file-feignClient</artifactId>
+</dependency>
+
+// 2. 注入 FileFeignClient
+@Autowired
+private FileFeignClient fileFeignClient;
+
+// 3. 生成上传凭证
+UploadCredentialRequest request = new UploadCredentialRequest();
+request.setFileName("avatar.jpg");
+request.setContentType("image/jpeg");
+request.setFileSize(1024000L);
+RI<UploadCredentialDTO> result = fileFeignClient.generateUploadCredential("user", request);
+
+// 4. 获取文件信息
+RI<FileInfoDTO> fileInfo = fileFeignClient.getFileInfo("user", fileKey);
+
+// 5. 生成下载 URL
+RI<String> downloadUrl = fileFeignClient.generateDownloadUrl("user", fileKey, 3600);
+
+// 6. 批量生成下载 URL（Map 形式）
+List<String> fileKeys = Arrays.asList("key1", "key2", "key3");
+RI<Map<String, String>> urlMap = fileFeignClient.batchGenerateDownloadUrlsMap("user", fileKeys, 3600);
+
+// 7. 删除文件
+RI<Void> deleteResult = fileFeignClient.deleteFile("user", fileKey);
+```
+
 ## 常见问题
 
 ### 1. 前后端接口对接
@@ -320,6 +360,59 @@ private UserFeignClient userFeignClient;
   - MVC 服务使用：`base-knife4j`
   - WebFlux 服务使用：`base-knife4j-webflux`
   - 两者不可混用
+
+### 6. 文件上传集成
+- **问题**：如何在业务服务中集成文件上传功能
+- **解决**：
+  1. **后端集成**（在业务服务的 pom.xml 中添加依赖）：
+     ```xml
+     <dependency>
+         <groupId>com.xiwen</groupId>
+         <artifactId>file-feignClient</artifactId>
+     </dependency>
+     ```
+  2. **后端调用示例**：
+     ```java
+     @Autowired
+     private FileFeignClient fileFeignClient;
+
+     // 生成上传凭证给前端
+     UploadCredentialRequest request = new UploadCredentialRequest();
+     request.setFileName("avatar.jpg");
+     request.setContentType("image/jpeg");
+     request.setFileSize(1024000L);
+     request.setBusinessType("avatar");
+     request.setBusinessId("user_10001");
+
+     RI<UploadCredentialDTO> result = fileFeignClient.generateUploadCredential("user", request);
+     // 返回给前端：uploadUrl、fileKey、expiresAt
+     ```
+  3. **前端使用流程**：
+     ```typescript
+     // Step 1: 调用业务接口获取上传凭证
+     const credential = await api.getUploadCredential({
+       fileName: file.name,
+       contentType: file.type,
+       fileSize: file.size
+     });
+
+     // Step 2: 使用预签名 URL 直传到存储服务
+     await axios.put(credential.uploadUrl, file, {
+       headers: { 'Content-Type': file.type }
+     });
+
+     // Step 3: 保存 fileKey 到业务数据
+     await api.updateUserAvatar({ fileKey: credential.fileKey });
+     ```
+  4. **常见使用场景**：
+     - 用户头像上传（moduleCode: "user", businessType: "avatar"）
+     - 商品图片上传（moduleCode: "product", businessType: "image"）
+     - 附件管理（moduleCode: "order", businessType: "attachment"）
+  5. **注意事项**：
+     - fileKey 使用 Long 类型（雪花 ID）
+     - 上传凭证有效期默认 1 小时
+     - 前端需处理上传超时和失败重试
+     - 文件删除时同时删除存储和数据库记录
 
 ## 重要开发约定
 
