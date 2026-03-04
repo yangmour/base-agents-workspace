@@ -336,11 +336,12 @@ public RI<UploadCredentialDTO> getUploadCredential(@RequestBody UploadCredential
     request.setBusinessType("avatar");
     request.setBusinessId("user_" + currentUserId);
 
-    // 2. 调用文件服务获取凭证
-    RI<UploadCredentialDTO> result = fileFeignClient.generateUploadCredential("user", request);
+    // 2. 调用文件服务获取凭证（自动拆包，直接返回数据）
+    // 失败时会抛出 BizException，由全局异常处理器处理
+    UploadCredentialDTO credential = fileFeignClient.generateUploadCredential("user", request);
 
     // 3. 返回给前端（前端使用 uploadUrl 直传，成功后保存 fileKey）
-    return result;
+    return RI.ok(credential);
 }
 ```
 
@@ -349,11 +350,8 @@ public RI<UploadCredentialDTO> getUploadCredential(@RequestBody UploadCredential
 @PutMapping("/avatar")
 @Operation(summary = "更新用户头像")
 public RI<Void> updateAvatar(@RequestBody UpdateAvatarRequest request) {
-    // 1. 验证文件是否存在
-    RI<FileInfoDTO> fileResult = fileFeignClient.getFileInfo("user", request.getFileKey());
-    if (fileResult.getCode() != 200) {
-        throw new BizException("文件不存在");
-    }
+    // 1. 验证文件是否存在（自动拆包，失败时自动抛出 BizException）
+    FileInfoDTO fileInfo = fileFeignClient.getFileInfo("user", request.getFileKey());
 
     // 2. 更新用户头像 fileKey
     User user = userMapper.selectById(currentUserId);
@@ -375,10 +373,10 @@ public RI<String> getUserAvatar(@PathVariable Long id) {
         return RI.f("用户未设置头像");
     }
 
-    // 2. 生成下载 URL（有效期 1 小时）
-    RI<String> result = fileFeignClient.generateDownloadUrl("user", user.getAvatarFileKey(), 3600);
+    // 2. 生成下载 URL（有效期 1 小时，自动拆包）
+    String downloadUrl = fileFeignClient.generateDownloadUrl("user", user.getAvatarFileKey(), 3600);
 
-    return result;
+    return RI.ok(downloadUrl);
 }
 ```
 
@@ -397,9 +395,8 @@ public RI<List<UserVO>> listUsers() {
         .distinct()
         .collect(Collectors.toList());
 
-    // 3. 批量获取下载 URL（避免 N+1 查询）
-    RI<Map<Long, String>> urlMapResult = fileFeignClient.batchGenerateDownloadUrlsMap("user", fileKeys, 3600);
-    Map<Long, String> urlMap = urlMapResult.getData();
+    // 3. 批量获取下载 URL（避免 N+1 查询，自动拆包）
+    Map<Long, String> urlMap = fileFeignClient.batchGenerateDownloadUrlsMap("user", fileKeys, 3600);
 
     // 4. 组装 VO
     List<UserVO> voList = users.stream().map(user -> {
@@ -424,7 +421,7 @@ public RI<Void> deleteAvatar() {
         return RI.f("用户未设置头像");
     }
 
-    // 2. 删除文件（同时删除存储和数据库记录）
+    // 2. 删除文件（同时删除存储和数据库记录，自动拆包）
     fileFeignClient.deleteFile("user", user.getAvatarFileKey());
 
     // 3. 清除用户头像 fileKey

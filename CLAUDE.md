@@ -309,26 +309,38 @@ private UserFeignClient userFeignClient;
 @Autowired
 private FileFeignClient fileFeignClient;
 
-// 3. 生成上传凭证
+// 3. 生成上传凭证（自动拆包，直接返回数据）
 UploadCredentialRequest request = new UploadCredentialRequest();
 request.setFileName("avatar.jpg");
 request.setContentType("image/jpeg");
 request.setFileSize(1024000L);
-RI<UploadCredentialDTO> result = fileFeignClient.generateUploadCredential("user", request);
+
+// 自动拆包，直接返回 DTO（失败时抛出 BizException）
+UploadCredentialDTO credential = fileFeignClient.generateUploadCredential("user", request);
+String uploadUrl = credential.getUploadUrl();
+Long fileKey = credential.getFileKey();
 
 // 4. 获取文件信息
-RI<FileInfoDTO> fileInfo = fileFeignClient.getFileInfo("user", fileKey);
+FileInfoDTO fileInfo = fileFeignClient.getFileInfo("user", fileKey);
+String fileName = fileInfo.getOriginalName();
+Long fileSize = fileInfo.getFileSize();
 
 // 5. 生成下载 URL
-RI<String> downloadUrl = fileFeignClient.generateDownloadUrl("user", fileKey, 3600);
+String downloadUrl = fileFeignClient.generateDownloadUrl("user", fileKey, 3600);
 
 // 6. 批量生成下载 URL（Map 形式）
 List<String> fileKeys = Arrays.asList("key1", "key2", "key3");
-RI<Map<String, String>> urlMap = fileFeignClient.batchGenerateDownloadUrlsMap("user", fileKeys, 3600);
+Map<String, String> urlMap = fileFeignClient.batchGenerateDownloadUrlsMap("user", fileKeys, 3600);
 
 // 7. 删除文件
-RI<Void> deleteResult = fileFeignClient.deleteFile("user", fileKey);
+fileFeignClient.deleteFile("user", fileKey);
+log.info("文件删除成功");
 ```
+
+**重要说明**：
+- FileFeignClient 使用 `FeignConfiguration` 自动拆包，所有方法直接返回数据对象
+- 调用失败时会抛出 `BizException`，由全局异常处理器统一处理
+- 无需手动调用 `.getData()` 获取数据，无需 try-catch（除非有特殊业务逻辑）
 
 ## 常见问题
 
@@ -371,21 +383,26 @@ RI<Void> deleteResult = fileFeignClient.deleteFile("user", fileKey);
          <artifactId>file-feignClient</artifactId>
      </dependency>
      ```
-  2. **后端调用示例**：
+  2. **后端调用示例**（自动拆包，直接返回数据）：
      ```java
      @Autowired
      private FileFeignClient fileFeignClient;
 
      // 生成上传凭证给前端
-     UploadCredentialRequest request = new UploadCredentialRequest();
-     request.setFileName("avatar.jpg");
-     request.setContentType("image/jpeg");
-     request.setFileSize(1024000L);
-     request.setBusinessType("avatar");
-     request.setBusinessId("user_10001");
+     @PostMapping("/upload-credential")
+     public RI<UploadCredentialDTO> getUploadCredential(@RequestBody UploadCredentialRequest request) {
+         try {
+             request.setBusinessType("avatar");
+             request.setBusinessId("user_10001");
 
-     RI<UploadCredentialDTO> result = fileFeignClient.generateUploadCredential("user", request);
-     // 返回给前端：uploadUrl、fileKey、expiresAt
+             // 直接返回数据，无需 .getData()
+             UploadCredentialDTO credential = fileFeignClient.generateUploadCredential("user", request);
+             return RI.ok(credential);
+         } catch (BizException e) {
+             log.error("生成上传凭证失败: {}", e.getMessage());
+             return RI.f(e.getMessage());
+         }
+     }
      ```
   3. **前端使用流程**：
      ```typescript
@@ -413,6 +430,7 @@ RI<Void> deleteResult = fileFeignClient.deleteFile("user", fileKey);
      - 上传凭证有效期默认 1 小时
      - 前端需处理上传超时和失败重试
      - 文件删除时同时删除存储和数据库记录
+     - **FileFeignClient 使用自动拆包，调用失败时抛出 BizException**
 
 ## 重要开发约定
 
