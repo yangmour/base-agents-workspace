@@ -106,14 +106,14 @@ public class UserController {
 
     @Operation(summary = "查询用户列表")
     @GetMapping
-    public RI<PageResult<UserDTO>> listUsers(UserQueryRequest request) {
+    public RI<PageResult<UserVO>> listUsers(UserQueryRequest request) {
         log.info("查询用户列表: {}", request);
         return RI.ok(userService.listUsers(request));
     }
 
     @Operation(summary = "创建用户")
     @PostMapping
-    public RI<UserDTO> createUser(@Valid @RequestBody UserCreateRequest request) {
+    public RI<UserVO> createUser(@Valid @RequestBody UserCreateRequest request) {
         log.info("创建用户: {}", request);
         return RI.ok(userService.createUser(request));
     }
@@ -124,7 +124,7 @@ public class UserController {
 
 ```typescript
 // types/api.d.ts
-export interface UserDTO {
+export interface UserVO {
   id: number
   username: string
   nickname: string
@@ -137,12 +137,12 @@ export interface UserQueryRequest {
 }
 
 // api/user.ts
-export function listUsers(params: UserQueryRequest): Promise<ApiResponse<PageResult<UserDTO>>> {
-  return get<PageResult<UserDTO>>('/api/v1/users', params)
+export function listUsers(params: UserQueryRequest): Promise<ApiResponse<PageResult<UserVO>>> {
+  return get<PageResult<UserVO>>('/api/v1/users', params)
 }
 
-export function createUser(data: UserCreateRequest): Promise<ApiResponse<UserDTO>> {
-  return post<UserDTO>('/api/v1/users', data)
+export function createUser(data: UserCreateRequest): Promise<ApiResponse<UserVO>> {
+  return post<UserVO>('/api/v1/users', data)
 }
 ```
 
@@ -151,11 +151,11 @@ export function createUser(data: UserCreateRequest): Promise<ApiResponse<UserDTO
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { listUsers } from '@/api/user'
-import type { UserDTO, UserQueryRequest } from '@/types/api'
+import type { UserVO, UserQueryRequest } from '@/types/api'
 import { ElMessage } from 'element-plus'
 
 const queryForm = ref<UserQueryRequest>({ pageNum: 1, pageSize: 10 })
-const tableData = ref<UserDTO[]>([])
+const tableData = ref<UserVO[]>([])
 const total = ref(0)
 const loading = ref(false)
 
@@ -186,7 +186,7 @@ onMounted(() => handleQuery())
 **步骤**：后端 Controller（RI.ok） → 前端 API 函数 → 前端页面
 
 **示例**：实现用户创建功能
-- 后端：`UserCreateRequest` → `UserController.createUser()` → `RI.ok(user)`
+- 后端：`UserCreateRequest` → `UserController.createUser()` → `RI.ok(userVO)`
 - 前端：`types/api.d.ts` → `api/user.ts` → `views/user/create.vue`
 
 ### 场景 2：新增内部 Feign API 接口
@@ -201,8 +201,8 @@ onMounted(() => handleQuery())
 **步骤**：后端 DTO + Service → 前端 types/api.d.ts → 前端页面更新
 
 **示例**：用户列表新增"角色"字段
-- 后端：`UserDTO` 新增 `List<String> roles`
-- 前端：`UserDTO` 新增 `roles?: string[]`
+- 后端：`UserVO` 新增 `List<String> roles`
+- 前端：`UserVO` 新增 `roles?: string[]`
 - 页面：显示角色标签
 
 ### 场景 4：错误处理
@@ -509,7 +509,7 @@ const beforeUpload = (file: File) => {
 
 ### 1. 类型安全
 - 前端 TypeScript 类型必须与后端 DTO 完全匹配
-- 使用泛型确保类型推导：`Promise<ApiResponse<UserDTO>>`
+- 使用泛型确保类型推导：`Promise<ApiResponse<UserVO>>`
 - 避免使用 `any` 类型
 
 ### 2. 接口分层
