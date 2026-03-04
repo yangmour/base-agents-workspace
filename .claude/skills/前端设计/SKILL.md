@@ -39,3 +39,27 @@ Interpret creatively and make unexpected choices that feel genuinely designed fo
 **IMPORTANT**: Match implementation complexity to the aesthetic vision. Maximalist designs need elaborate code with extensive animations and effects. Minimalist or refined designs need restraint, precision, and careful attention to spacing, typography, and subtle details. Elegance comes from executing the vision well.
 
 Remember: Claude is capable of extraordinary creative work. Don't hold back, show what can truly be created when thinking outside the box and committing fully to a distinctive vision.
+
+## Repository Constraints (Must Follow)
+
+When working in this repository, apply these technical constraints first:
+
+- Primary frontend path: `node-base-module/base-admin-web/` (Vue 3 + TypeScript + Element Plus + Vite).
+- Secondary frontend path: `node-base-module/weixin-bot-admin/` (Vue 3 + Vite).
+- Keep existing component conventions and route structure; avoid introducing a new state/library stack unless requested.
+- New API calls must align with backend contract fields: `code`, `msg`, `data`, `traceId`.
+- Prefer responsive layouts that work at least on 375px mobile width and common desktop widths.
+
+## Delivery Checklist (Before Finish)
+
+- `npm run build` passes in the touched frontend module.
+- No obvious text overflow/overlap in mobile and desktop layouts.
+- Loading/empty/error states are present for async data views.
+- Colors, typography, and motion are consistent with one explicit visual direction.
+- Accessibility basics: interactive elements have clear hover/focus states and sufficient contrast.
+
+## Anti-Patterns (Do Not)
+
+- Do not output only static mockup-like HTML when the task requires functional interaction.
+- Do not leave placeholder assets/text (e.g., lorem ipsum, TODO) in final output.
+- Do not hardcode backend URLs in components; route through project API utilities/config.

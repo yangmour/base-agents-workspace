@@ -1,6 +1,6 @@
 ---
 name: java-microservice
-description: 后端Java微服务开发指南。触发场景：写接口、测试接口、创建接口、写Service、创建Service、业务逻辑、写Mapper、创建Mapper、查询数据库、操作数据库、数据访问层、开发Spring Boot服务、实现Controller/Service/Mapper、使用MyBatis-Plus操作数据库、集成Redis缓存/分布式锁、创建Feign客户端、使用base-*公共模块（base-basic/base-redis/base-knife4j等）。不适用于前端开发、前后端联调。
+description: 后端Java微服务开发指南。触发场景：写接口、测试接口、创建接口、写Service、创建Service、业务逻辑、写Mapper、创建Mapper、查询数据库、操作数据库、数据访问层、开发Spring Boot服务、实现Controller/Service/Mapper、使用MyBatis-Plus操作数据库、集成Redis缓存/分布式锁、创建Feign客户端、使用base-*公共模块（base-basic/base-redis/base-knife4j等）。核心要求：分层清晰、DTO/VO分离、Feign返回业务对象（非RI嵌套）、异常统一由base-basic处理。不适用于前端开发、前后端联调。
 ---
 
 # Java 微服务开发
@@ -10,7 +10,7 @@ description: 后端Java微服务开发指南。触发场景：写接口、测试
 > - **Service层**："写Service"、"创建Service"、"业务逻辑"、"业务层"
 > - **Mapper层**："写Mapper"、"创建Mapper"、"数据访问层"、"DAO"、"查询数据库"、"操作数据库"
 > - **框架相关**："Spring Boot"、"MyBatis-Plus"、"Feign客户端"、"Redis缓存"、"分布式锁"
-> - **实体类**："Entity"、"实体类"、"DTO"、"VO"、"PO"
+> - **实体类**："Entity"、"实体类"、"DTO"、"VO"
 
 本技能提供在此项目中开发 Spring Boot 微服务的指南，遵循已建立的模式和规范。
 
@@ -40,8 +40,8 @@ base-module/
 - 业务服务放在 `server/` 模块
 - Feign客户端独立模块，便于其他服务依赖
 
-### 2. 统一响应格式
-**所有 API 统一使用 `RI<T>` 封装**
+### 2. 统一响应格式（按当前仓库实践）
+**对外接口保持 `code/msg/data/traceId` 契约；Controller 可返回 `RI<T>/R<T>`，也可返回业务对象由 base-basic 自动包装。**
 
 ```java
 // 公开 API
@@ -50,10 +50,16 @@ public RI<TokenResponse> login(@RequestBody LoginRequest request) {
     return RI.ok(response);
 }
 
-// 内部 Feign
+// 直接返回对象（由 ResponseBodyAdvice 自动包装）
+@GetMapping("/{id}")
+public UserVO getById(@PathVariable Long id) {
+    return userService.getById(id);
+}
+
+// 内部 Feign：客户端接口返回业务 DTO（不要在客户端侧使用 RI）
 @Override
-public RI<UserDTO> getUser(@PathVariable Long id) {
-    return RI.ok(user);
+public UserDTO getUser(@PathVariable Long id) {
+    return user;
 }
 
 // 响应式接口（WebFlux）
@@ -79,6 +85,20 @@ if (user == null) {
 - **VO（视图对象）**: 用于返回响应数据给前端
 - **DTO（传输对象）**: 用于服务间 Feign 调用传输
 
+**四同强约束（新增）**：
+- **同语义同词根**：如用户统一用 `User`，不要混用 `Member/Account/Profile`。
+- **同类型同后缀**：
+  - 实体：`User`（无后缀）
+  - Request：`UserCreateRequest` / `UserQueryRequest`
+  - DTO：`UserDTO`
+  - VO：`UserVO`
+- **同类型同目录**：
+  - 实体只在 `domain/`
+  - Request 只在 `request/`
+  - DTO 只在 `dto/`
+  - VO 只在 `vo/`
+- **同类型同命名风格**：禁止同仓库同时出现 `UserDTO` 与 `UserDto`、`UserVO` 与 `UserVo`。
+
 **详细规范**：参考 [references/dto-vo-separation.md](references/dto-vo-separation.md)
 
 **快速示例**：
@@ -103,6 +123,26 @@ public RI<RoleVO> getRoleById(@PathVariable Long id) {
 public RI<Role> getRole(@PathVariable Long id) {
     return RI.ok(roleService.getById(id));  // ❌ 暴露了数据库字段
 }
+```
+
+### 4.1 实体命名规范（新增，强制）
+- 实体类统一使用 `UpperCamelCase` 的业务名词，且使用**单数**：`User`、`LoginLog`、`FileModule`。
+- 实体类放在 `domain/` 包，不要混放到 `dto/vo/request` 包。
+- 禁止随意后缀：`Entity/DO/PO/Pojo/Model/Data/Info/New/Tmp/Test`。
+- 实体命名需与表语义对应：`auth_user` → `User`，`file_module` → `FileModule`。
+- 一个表只对应一个主实体名，不允许同义并存（如同时出现 `UserDO` 与 `UserEntity`）。
+
+**正反例**：
+```java
+// ✅ 推荐
+public class User {}
+public class FileModule {}
+
+// ❌ 禁止
+public class UserEntity {}
+public class UserDO {}
+public class FileModuleData {}
+public class NewUserModel {}
 ```
 
 ### 5. 策略模式
@@ -267,13 +307,13 @@ base-feignClients/business-feignClient/
 └── pom.xml
 ```
 
-**Feign 接口**：
+**Feign 接口（推荐）**：
 ```java
 @FeignClient(name = "business-service", path = "/inner/business")
 public interface BusinessFeignClient {
 
     @GetMapping("/{id}")
-    RI<BusinessDTO> getById(@PathVariable("id") Long id);
+    BusinessDTO getById(@PathVariable("id") Long id);
 }
 ```
 
@@ -284,13 +324,13 @@ public interface BusinessFeignClient {
 public class BusinessInnerController implements BusinessFeignClient {
 
     @Override
-    public RI<BusinessDTO> getById(@PathVariable Long id) {
-        return RI.ok(businessService.getById(id));
+    public BusinessDTO getById(@PathVariable Long id) {
+        return businessService.getById(id);
     }
 }
 ```
 
-**详细指南**：参考 [references/common-modules.md - Feign客户端部分](references/common-modules.md#feign-客户端)
+**详细指南**：参考 [references/common-modules.md](references/common-modules.md)
 
 ---
 
@@ -454,14 +494,10 @@ public RI<Void> deleteAvatar() {
 
 #### 5. 错误处理
 ```java
-// 校验文件是否存在
-RI<FileInfoDTO> fileResult = fileFeignClient.getFileInfo("user", fileKey);
-if (fileResult.getCode() != 200) {
-    throw new BizException("文件不存在或已删除");
-}
+// 校验文件是否存在（失败时自动抛 BizException）
+FileInfoDTO fileInfo = fileFeignClient.getFileInfo("user", fileKey);
 
 // 校验文件大小
-FileInfoDTO fileInfo = fileResult.getData();
 if (fileInfo.getFileSize() > 5 * 1024 * 1024) {  // 5MB
     throw new BizException("文件大小超过限制");
 }
@@ -482,7 +518,7 @@ if (!fileInfo.getMimeType().startsWith("image/")) {
 public RI<UploadCredentialDTO> getAvatarUploadCredential(@RequestBody UploadCredentialRequest request) {
     request.setBusinessType("avatar");
     request.setBusinessId("user_" + SecurityUtils.getCurrentUserId());
-    return fileFeignClient.generateUploadCredential("user", request);
+    return RI.ok(fileFeignClient.generateUploadCredential("user", request));
 }
 
 // 2. 前端使用 uploadUrl 直传到存储服务（不经过后端）
@@ -490,13 +526,8 @@ public RI<UploadCredentialDTO> getAvatarUploadCredential(@RequestBody UploadCred
 // 3. 前端上传成功后，调用保存接口
 @PutMapping("/api/v1/users/avatar")
 public RI<UserVO> updateAvatar(@RequestBody UpdateAvatarRequest request) {
-    // 3.1 验证文件
-    RI<FileInfoDTO> fileResult = fileFeignClient.getFileInfo("user", request.getFileKey());
-    if (fileResult.getCode() != 200) {
-        throw new BizException("文件不存在");
-    }
-
-    FileInfoDTO fileInfo = fileResult.getData();
+    // 3.1 验证文件（失败时自动抛 BizException）
+    FileInfoDTO fileInfo = fileFeignClient.getFileInfo("user", request.getFileKey());
 
     // 3.2 校验文件类型和大小
     if (!fileInfo.getMimeType().startsWith("image/")) {
@@ -519,8 +550,7 @@ public RI<UserVO> updateAvatar(@RequestBody UpdateAvatarRequest request) {
 
     // 3.5 返回用户信息（含头像 URL）
     UserVO vo = convertToVO(user);
-    RI<String> urlResult = fileFeignClient.generateDownloadUrl("user", user.getAvatarFileKey(), 3600);
-    vo.setAvatarUrl(urlResult.getData());
+    vo.setAvatarUrl(fileFeignClient.generateDownloadUrl("user", user.getAvatarFileKey(), 3600));
 
     return RI.ok(vo);
 }
@@ -567,6 +597,12 @@ public RI<UserVO> updateAvatar(@RequestBody UpdateAvatarRequest request) {
 
 ## 最佳实践
 
+### 0. 开发禁止项（必须遵守）
+- 不要在 Feign 客户端接口返回 `RI<T>/R<T>`，客户端方法统一返回业务 DTO/VO。
+- 不要把 Entity 直接暴露给 Controller 响应。
+- 不要在 Controller 中编排复杂事务逻辑（下沉到 Service）。
+- 不要在 SQL 中拼接用户输入参数。
+
 ### 1. 日志规范
 ```java
 // 入口日志
@@ -596,6 +632,14 @@ public void updateUser(User user) {
 - L2 缓存：Redis（分布式缓存）
 - 分页查询：使用 MyBatis-Plus Page
 - 避免 N+1 查询
+
+### 5. 提交前自检清单
+- [ ] Feign 客户端返回类型为 DTO/VO，而非 `RI/R`
+- [ ] Controller 响应不直接返回 Entity
+- [ ] 新增实体类命名符合规范（单数业务名词、无随意后缀）
+- [ ] 异常走 `BizException` + 全局异常处理器
+- [ ] 关键路径有日志（至少包含关键业务主键）
+- [ ] 至少执行：`mvn -pl <module> test`（或等效测试）
 
 ---
 
