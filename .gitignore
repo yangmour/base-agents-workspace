@@ -4,6 +4,8 @@ node-base-module/
 base-agents-workspace/
 fn-devops/
 
+.DS_Store
+
 # 但保留 Claude Code 配置
 !.claude/
 !CLAUDE.md
