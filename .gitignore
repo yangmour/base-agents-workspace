@@ -25,3 +25,5 @@ fn-devops/
 *.tmp
 *.bak
 *.cache
+
+xq-images
