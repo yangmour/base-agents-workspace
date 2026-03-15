@@ -88,19 +88,26 @@ tenant_id BIGINT NOT NULL DEFAULT 0 COMMENT '租户ID'
 
 ### 字段类型选择
 
-| 数据类型 | PostgreSQL | MySQL | 使用场景 |
-|---------|-----------|-------|---------|
-| 整数(小) | SMALLINT | SMALLINT | 枚举、状态 |
-| 整数(中) | INT | INT | 普通计数 |
-| 整数(大) | BIGINT | BIGINT | ID、金额分 |
-| 小数 | NUMERIC(10,2) | DECIMAL(10,2) | 金额 |
-| 字符串(短) | VARCHAR(50) | VARCHAR(50) | 用户名、编号 |
-| 字符串(长) | VARCHAR(500) | VARCHAR(500) | 描述 |
-| 文本 | TEXT | TEXT | 长文本 |
-| 日期时间 | TIMESTAMP | DATETIME | 时间戳 |
-| 日期 | DATE | DATE | 日期 |
-| 布尔 | BOOLEAN | TINYINT | 是否 |
-| JSON | JSONB | JSON | JSON数据 |
+### 三库兼容要求（强制）
+- 所有数据库设计和 SQL 变更，必须同时考虑 **SQLite、MySQL、PostgreSQL** 三种数据库。
+- 文档和初始化入口可以默认使用 MySQL，但必须同步提供 SQLite / PostgreSQL 的兼容脚本、兼容实现或明确说明。
+- 若单条 SQL 无法跨库执行，必须拆分为 `*-mysql.sql`、`*-sqlite.sql`、`*-postgresql.sql` 或等价命名版本。
+- 不允许把 PostgreSQL / MySQL / SQLite 某一方的私有语法直接当作全局标准，例如：`BIGSERIAL`、`AUTO_INCREMENT`、`JSONB`、`ON CONFLICT`、`ON DUPLICATE KEY UPDATE`、`COMMENT ON`、`PARTITION BY`、`pg_*` 系统表查询等，都必须单独评估兼容性。
+- 所有字段必须有注释；MySQL 使用列 `COMMENT`，PostgreSQL 使用 `COMMENT ON COLUMN`，SQLite 使用行内注释或配套字段说明文档。
+
+| 数据类型 | PostgreSQL | MySQL | SQLite | 使用场景 |
+|---------|-----------|-------|--------|---------|
+| 整数(小) | SMALLINT | SMALLINT | INTEGER | 枚举、状态 |
+| 整数(中) | INT | INT | INTEGER | 普通计数 |
+| 整数(大) | BIGINT | BIGINT | INTEGER | ID、金额分 |
+| 小数 | NUMERIC(10,2) | DECIMAL(10,2) | NUMERIC | 金额 |
+| 字符串(短) | VARCHAR(50) | VARCHAR(50) | TEXT | 用户名、编号 |
+| 字符串(长) | VARCHAR(500) | VARCHAR(500) | TEXT | 描述 |
+| 文本 | TEXT | TEXT | TEXT | 长文本 |
+| 日期时间 | TIMESTAMP | DATETIME | TEXT / NUMERIC | 时间戳 |
+| 日期 | DATE | DATE | TEXT | 日期 |
+| 布尔 | BOOLEAN | TINYINT | INTEGER | 是否 |
+| JSON | JSONB | JSON | TEXT | JSON数据 |
 
 ### 字段命名示例
 ```sql

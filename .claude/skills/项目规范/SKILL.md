@@ -211,6 +211,15 @@ com.xiwen.server.{service}/
 - 唯一索引：`uk_{column_name}`
 - 组合索引：`idx_{column1}_{column2}`
 
+### 数据库兼容性（强制）
+
+- 所有数据库相关改动必须同时兼容 **SQLite、MySQL、PostgreSQL**。
+- 文档、配置、初始化脚本默认以 **MySQL** 为主路径，但必须保留 **SQLite / PostgreSQL** 兼容实现或说明。
+- 禁止在通用代码中硬编码单一数据库方言（如固定 `DbType.POSTGRE_SQL`、只支持单库的分页/DDL/函数）。
+- SQL 脚本若无法做到单文件跨库兼容，必须按数据库方言拆分为独立脚本，并在 README/CHANGELOG 中明确默认脚本与兼容脚本。
+- 字段类型、索引、分页、JSON、布尔值、自增主键、UPSERT、时间函数等差异，必须按三库分别校验，不得只在单一数据库上成立。
+- 新增或修改 SQL 时，所有字段都必须补齐注释：MySQL 在列定义中使用 `COMMENT`，PostgreSQL 使用 `COMMENT ON COLUMN`，SQLite 至少使用行内注释或配套文档说明。
+
 ---
 
 ## API 设计规范
@@ -457,7 +466,9 @@ public void createOrder(Long userId, OrderRequest request) {
 
 ### 数据库
 
-- PostgreSQL (主数据库)
+- MySQL（默认数据库）
+- PostgreSQL（兼容数据库）
+- SQLite（兼容数据库）
 - MyBatis-Plus 3.5.15
 
 ### 缓存与锁
