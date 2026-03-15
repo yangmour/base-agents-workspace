@@ -68,7 +68,7 @@ description: Git 提交规范 - 约定式提交（Conventional Commits）规范�
 
 ### 项目常用 scope（与目录保持一致）
 
-**后端服务/模块**：`auth-center`、`api-gateway`、`im-service`、`file-service`、`springAiAlibaba`、`common`
+**后端服务/模块**：`auth-center`、`api-gateway`、`im-service`、`file-service`、`spring-ai-alibaba`、`common`
 
 **前端模块**：`base-admin-web`、`weixin-bot-admin`、`api`、`components`、`utils`、`types`、`views`
 

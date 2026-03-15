@@ -31,7 +31,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `file-service`：文件服务，WebFlux
 - `im-service`：IM 服务，WebFlux
 - `weixin-bot`：微信机器人服务
-- `springAiAlibaba`：AI 相关服务
+- `spring-ai-alibaba`：AI 相关服务
 - `examples`：示例服务
 
 各服务内部普遍采用分层结构：
