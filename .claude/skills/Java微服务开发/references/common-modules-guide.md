@@ -44,20 +44,21 @@ public class PublicController {
 }
 ```
 
-#### RI<T> - 内部 API 响应
-用于微服务之间的 Feign 调用：
+#### RI<T> - 对外接口响应
+用于公开 Controller 返回统一响应；内部 Feign 服务端实现可返回 DTO，并由统一包装层处理：
 ```java
 @RestController
 @RequestMapping("/inner")
 public class InnerController implements UserFeignClient {
 
     @Override
-    public RI<UserDTO> getUser(@PathVariable Long id) {
-        UserDTO user = userService.getById(id);
-        return RI.ok(user);
+    public UserDTO getUser(@PathVariable Long id) {
+        return userService.getById(id);
     }
 }
 ```
+
+Feign 客户端接口方法返回业务 DTO/VO，不要声明为 `RI<T>`，避免调用方出现 `RI<RI<T>>` 或重复拆包。
 
 #### RS<T> - 流式响应
 用于 WebFlux 响应式接口（如网关）：
@@ -372,10 +373,10 @@ public class UserDTO {
 public interface UserFeignClient {
 
     @GetMapping("/{id}")
-    RI<UserDTO> getById(@PathVariable("id") Long id);
+    UserDTO getById(@PathVariable("id") Long id);
 
     @PostMapping("/batch")
-    RI<List<UserDTO>> getByIds(@RequestBody List<Long> ids);
+    List<UserDTO> getByIds(@RequestBody List<Long> ids);
 }
 ```
 
@@ -398,13 +399,11 @@ public class OrderService {
     private final UserFeignClient userFeignClient;
 
     public OrderDTO createOrder(OrderRequest request) {
-        // 调用用户服务获取用户信息
-        RI<UserDTO> result = userFeignClient.getById(request.getUserId());
-        if (!result.isSuccess()) {
+        UserDTO user = userFeignClient.getById(request.getUserId());
+        if (user == null) {
             throw new BizException("用户不存在");
         }
 
-        UserDTO user = result.getData();
         // 创建订单逻辑...
         return orderDTO;
     }

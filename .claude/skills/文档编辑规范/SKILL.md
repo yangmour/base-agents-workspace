@@ -26,8 +26,8 @@ description: 数据库变更和配置变更的递增式管理规范。使用场�
 - 仅提交代码或规范 commit message（使用 `Git提交规范`）
 
 ## 📦 标准产出（必须同时具备）
-- 迁移脚本：`V{n}__{desc}.sql`
-- 回滚脚本：`rollback/V{n}__rollback.sql`
+- 迁移脚本：`base-module/docs/sql/V{n}__{desc}.sql`（或服务内 `docs/数据库变更/db/V{n}__{desc}.sql`，以当前模块既有目录为准）
+- 回滚脚本：同目录下 `rollback/V{n}__rollback.sql`
 - 变更记录：`CHANGELOG.md` 或 `CHANGELOG_CONFIG.md` 的对应条目
 - 目录索引：相关目录 `README.md`/`INDEX.md` 的导航更新
 - 验证步骤：至少 1 条“执行后检查 SQL/命令”
@@ -60,6 +60,8 @@ description: 数据库变更和配置变更的递增式管理规范。使用场�
 ### 1. SQL文件递增管理 ⭐ 核心
 
 #### 目录结构
+优先遵循仓库级目录：`base-module/docs/sql/`；若某个服务已有独立数据库变更体系，则沿用服务内 `docs/数据库变更/db/`，不要在同一模块内混用两套目录。
+
 ```
 server/auth-center/
 ├── docs/

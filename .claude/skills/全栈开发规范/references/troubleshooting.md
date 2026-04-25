@@ -283,7 +283,7 @@ spring:
 )
 public interface UserFeignClient {
     @GetMapping("/{id}")      // ← 完整路径 /inner/users/{id}
-    RI<UserDTO> getUserById(@PathVariable("id") Long id);
+    UserDTO getUserById(@PathVariable("id") Long id);
 }
 ```
 
@@ -299,7 +299,7 @@ public interface UserFeignClient {
 public class InnerUserController implements UserFeignClient {
 
     @Override
-    public RI<UserDTO> getUserById(@PathVariable Long id) {
+    public UserDTO getUserById(@PathVariable Long id) {
         // ← 必须实现 Feign 接口
     }
 }

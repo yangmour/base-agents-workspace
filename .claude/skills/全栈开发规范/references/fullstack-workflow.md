@@ -14,8 +14,8 @@
   - pageSize: number (每页条数)
   - username: string (可选，用户名模糊查询)
 响应数据:
-  - PageResult<UserDTO>
-    - list: UserDTO[]
+  - PageResult<UserVO>
+    - list: UserVO[]
     - total: number
     - pageNum: number
     - pageSize: number
@@ -25,12 +25,12 @@
 
 ## 步骤 2：后端实现
 
-### 2.1 创建 DTO
+### 2.1 创建 VO
 
 ```java
-// base-module/server/auth-center/src/main/java/com/xiwen/server/auth/dto/UserDTO.java
+// base-module/server/auth-center/src/main/java/com/xiwen/server/auth/vo/UserVO.java
 @Schema(description = "用户信息")
-public class UserDTO {
+public class UserVO {
     @Schema(description = "用户ID")
     private Long id;
 
@@ -79,18 +79,18 @@ public class UserController {
 
     @Operation(summary = "查询用户列表", description = "分页查询用户列表")
     @GetMapping
-    public RI<PageResult<UserDTO>> listUsers(UserQueryRequest request) {
+    public RI<PageResult<UserVO>> listUsers(UserQueryRequest request) {
         log.info("查询用户列表: {}", request);
-        PageResult<UserDTO> result = userService.listUsers(request);
-        return RI.ok(result);  // ← 使用 RI.ok
+        PageResult<UserVO> result = userService.listUsers(request);
+        return RI.ok(result);  // ← 对外接口返回 VO
     }
 
     @Operation(summary = "创建用户", description = "创建新用户")
     @PostMapping
-    public RI<UserDTO> createUser(@Valid @RequestBody UserCreateRequest request) {
+    public RI<UserVO> createUser(@Valid @RequestBody UserCreateRequest request) {
         log.info("创建用户: {}", request);
-        UserDTO user = userService.createUser(request);
-        return RI.ok(user);  // ← 使用 RI.ok
+        UserVO user = userService.createUser(request);
+        return RI.ok(user);  // ← 对外接口返回 VO
     }
 }
 ```
@@ -107,17 +107,15 @@ public class InnerUserController implements UserFeignClient {
     private final UserService userService;
 
     @Override
-    public RI<UserDTO> getUserById(@PathVariable Long id) {
+    public UserDTO getUserById(@PathVariable Long id) {
         log.info("[内部调用] 查询用户: id={}", id);
-        UserDTO user = userService.getById(id);
-        return RI.ok(user);  // ← 内部 API 使用 RI.ok
+        return userService.getById(id);  // ← Feign 服务端返回 DTO，由统一包装层处理
     }
 
     @Override
-    public RI<List<UserDTO>> getUsersByIds(@RequestBody List<Long> ids) {
+    public List<UserDTO> getUsersByIds(@RequestBody List<Long> ids) {
         log.info("[内部调用] 批量查询用户: ids={}", ids);
-        List<UserDTO> users = userService.getByIds(ids);
-        return RI.ok(users);
+        return userService.getByIds(ids);
     }
 }
 ```
@@ -151,7 +149,7 @@ public class MessageController {
 // node-base-module/base-admin-web/src/types/api.d.ts
 
 /** 用户信息 */
-export interface UserDTO {
+export interface UserVO {
   id: number
   username: string
   nickname: string
@@ -178,11 +176,11 @@ export interface UserCreateRequest {
 
 ```typescript
 // node-base-module/base-admin-web/src/api/user.ts
-import { get, post } from '@/utils/request'
+import { get, post, del } from '@/utils/request'
 import type {
   ApiResponse,
   PageResult,
-  UserDTO,
+  UserVO,
   UserQueryRequest,
   UserCreateRequest
 } from '@/types/api'
@@ -190,22 +188,29 @@ import type {
 /**
  * 查询用户列表
  */
-export function listUsers(params: UserQueryRequest): Promise<ApiResponse<PageResult<UserDTO>>> {
-  return get<PageResult<UserDTO>>('/api/v1/users', params)
+export function listUsers(params: UserQueryRequest): Promise<ApiResponse<PageResult<UserVO>>> {
+  return get<PageResult<UserVO>>('/api/v1/users', params)
 }
 
 /**
  * 创建用户
  */
-export function createUser(data: UserCreateRequest): Promise<ApiResponse<UserDTO>> {
-  return post<UserDTO>('/api/v1/users', data)
+export function createUser(data: UserCreateRequest): Promise<ApiResponse<UserVO>> {
+  return post<UserVO>('/api/v1/users', data)
 }
 
 /**
  * 获取用户详情
  */
-export function getUserById(id: number): Promise<ApiResponse<UserDTO>> {
-  return get<UserDTO>(`/api/v1/users/${id}`)
+export function getUserById(id: number): Promise<ApiResponse<UserVO>> {
+  return get<UserVO>(`/api/v1/users/${id}`)
+}
+
+/**
+ * 删除用户
+ */
+export function deleteUser(id: number): Promise<ApiResponse<void>> {
+  return del<void>(`/api/v1/users/${id}`)
 }
 ```
 
@@ -257,8 +262,8 @@ export function getUserById(id: number): Promise<ApiResponse<UserDTO>> {
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { listUsers } from '@/api/user'
-import type { UserDTO, UserQueryRequest } from '@/types/api'
+import { listUsers, deleteUser } from '@/api/user'
+import type { UserVO, UserQueryRequest } from '@/types/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
@@ -271,7 +276,7 @@ const queryForm = ref<UserQueryRequest>({
 })
 
 // 表格数据
-const tableData = ref<UserDTO[]>([])
+const tableData = ref<UserVO[]>([])
 const total = ref(0)
 const loading = ref(false)
 
@@ -307,17 +312,17 @@ const handleCreate = () => {
 }
 
 // 编辑
-const handleEdit = (row: UserDTO) => {
+const handleEdit = (row: UserVO) => {
   router.push(`/user/edit/${row.id}`)
 }
 
 // 删除
-const handleDelete = async (row: UserDTO) => {
+const handleDelete = async (row: UserVO) => {
   try {
     await ElMessageBox.confirm(`确定删除用户"${row.username}"吗？`, '提示', {
       type: 'warning'
     })
-    // TODO: 调用删除接口
+    await deleteUser(row.id)
     ElMessage.success('删除成功')
     handleQuery()
   } catch {

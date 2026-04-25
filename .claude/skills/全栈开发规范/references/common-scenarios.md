@@ -43,9 +43,9 @@ public class UserCreateRequest {
 ```java
 @Operation(summary = "创建用户", description = "创建新用户")
 @PostMapping
-public RI<UserDTO> createUser(@Valid @RequestBody UserCreateRequest request) {
+public RI<UserVO> createUser(@Valid @RequestBody UserCreateRequest request) {
     log.info("创建用户: {}", request);
-    UserDTO user = userService.createUser(request);
+    UserVO user = userService.createUser(request);
     return RI.ok(user);
 }
 ```
@@ -66,8 +66,8 @@ export interface UserCreateRequest {
 **API 函数**：
 ```typescript
 // api/user.ts
-export function createUser(data: UserCreateRequest): Promise<ApiResponse<UserDTO>> {
-  return post<UserDTO>('/api/v1/users', data)
+export function createUser(data: UserCreateRequest): Promise<ApiResponse<UserVO>> {
+  return post<UserVO>('/api/v1/users', data)
 }
 ```
 
@@ -166,7 +166,6 @@ base-feignClients/user-feignClient/
 ```java
 package com.xiwen.feign.user.api;
 
-import com.xiwen.basic.response.RI;
 import com.xiwen.feign.user.dto.UserDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
@@ -177,10 +176,10 @@ import java.util.List;
 public interface UserFeignClient {
 
     @GetMapping("/{id}")
-    RI<UserDTO> getUserById(@PathVariable("id") Long id);
+    UserDTO getUserById(@PathVariable("id") Long id);
 
     @PostMapping("/batch")
-    RI<List<UserDTO>> getUsersByIds(@RequestBody List<Long> ids);
+    List<UserDTO> getUsersByIds(@RequestBody List<Long> ids);
 }
 ```
 
@@ -189,7 +188,6 @@ public interface UserFeignClient {
 ```java
 package com.xiwen.server.auth.controller.inner;
 
-import com.xiwen.basic.response.RI;
 import com.xiwen.feign.user.api.UserFeignClient;
 import com.xiwen.feign.user.dto.UserDTO;
 import com.xiwen.server.auth.service.UserService;
@@ -208,17 +206,15 @@ public class InnerUserController implements UserFeignClient {
     private final UserService userService;
 
     @Override
-    public RI<UserDTO> getUserById(@PathVariable Long id) {
+    public UserDTO getUserById(@PathVariable Long id) {
         log.info("[内部调用] 查询用户: id={}", id);
-        UserDTO user = userService.getById(id);
-        return RI.ok(user);
+        return userService.getById(id);
     }
 
     @Override
-    public RI<List<UserDTO>> getUsersByIds(@RequestBody List<Long> ids) {
+    public List<UserDTO> getUsersByIds(@RequestBody List<Long> ids) {
         log.info("[内部调用] 批量查询用户: ids={}", ids);
-        List<UserDTO> users = userService.getByIds(ids);
-        return RI.ok(users);
+        return userService.getByIds(ids);
     }
 }
 ```
@@ -229,7 +225,6 @@ public class InnerUserController implements UserFeignClient {
 package com.xiwen.server.order.service.impl;
 
 import com.xiwen.basic.exception.BizException;
-import com.xiwen.basic.response.RI;
 import com.xiwen.feign.user.api.UserFeignClient;
 import com.xiwen.feign.user.dto.UserDTO;
 import lombok.RequiredArgsConstructor;
@@ -244,13 +239,11 @@ public class OrderService {
     private final UserFeignClient userFeignClient;
 
     public OrderDTO createOrder(OrderRequest request) {
-        // 调用用户服务
-        RI<UserDTO> result = userFeignClient.getUserById(request.getUserId());
-        if (!result.isSuccess()) {
+        UserDTO user = userFeignClient.getUserById(request.getUserId());
+        if (user == null) {
             throw new BizException("用户不存在");
         }
 
-        UserDTO user = result.getData();
         log.info("获取用户信息: username={}", user.getUsername());
 
         // 创建订单逻辑...
@@ -358,7 +351,7 @@ if (user == null) {
 
 // 参数校验异常（自动抛出）
 @PostMapping
-public RI<UserDTO> createUser(@Valid @RequestBody UserCreateRequest request) {
+public RI<UserVO> createUser(@Valid @RequestBody UserCreateRequest request) {
     // @Valid 校验失败会自动抛出 MethodArgumentNotValidException
     // GlobalExceptionHandler 自动处理
 }

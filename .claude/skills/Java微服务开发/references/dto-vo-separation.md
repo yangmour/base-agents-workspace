@@ -402,7 +402,7 @@ public interface UserFeignClient {
 @FeignClient(name = "auth-center")
 public interface UserFeignClient {
     @GetMapping("/{id}")
-    RI<UserDTO> getUser(@PathVariable Long id);  // ✅ 返回 DTO 或 VO
+    UserDTO getUser(@PathVariable Long id);  // ✅ Feign 客户端返回 DTO 或 VO，不包 RI
 }
 ```
 

@@ -574,7 +574,10 @@ public RI<UserVO> updateAvatar(@RequestBody UpdateAvatarRequest request) {
 - JDK 21
 
 ### 数据库
-- PostgreSQL (主数据库)
+- MySQL（默认开发与文档主路径）
+- PostgreSQL（兼容数据库）
+- SQLite（兼容数据库）
+- 数据库结构、索引、初始化和迁移脚本必须同时考虑三库兼容
 - MyBatis-Plus 3.5.15
 
 ### 缓存与锁
