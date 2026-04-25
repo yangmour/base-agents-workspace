@@ -243,9 +243,9 @@ See also PR #456
 
 ## 项目特殊规范
 
-### Claude Code 标记（必须）
+### 项目提交标记（必须）
 
-本项目所有提交必须添加以下标记：
+本项目所有提交必须且只能添加以下标记：
 
 ```
 🤖
@@ -255,6 +255,7 @@ See also PR #456
 
 - 放在 Footer 的最后
 - 前面空一行
+- 提交信息末尾只有 `🤖`，不得添加 `Generated with ...`、任何 `Co-Authored-By:` 行或其他署名链接
 
 #### 完整格式
 
@@ -337,7 +338,7 @@ git push -u origin feature/user-login
 - [ ] Subject 简洁明了（不超过50字符）
 - [ ] 复杂修改添加 Body 说明
 - [ ] 破坏性变更添加 BREAKING CHANGE
-- [ ] 添加 Claude Code 标记
+- [ ] 仅添加 `🤖` 标记，且不包含任何 `Co-Authored-By:` 或 `Generated with` 行
 
 ### 提交后检查
 
@@ -413,7 +414,7 @@ chore(gitignore): 更新忽略规则
 - ✅ Body 说明原因和实现
 - ✅ Footer 包含必要的关联信息
 - ❌ 不要使用模糊的描述
-- ❌ 不要忽略 Claude Code 标记
+- ❌ 不要忽略项目提交标记 `🤖`，也不要添加任何 `Co-Authored-By:` 或 `Generated with` 行
 
 ### 3. 代码质量
 

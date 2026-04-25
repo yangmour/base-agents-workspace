@@ -181,10 +181,10 @@ Resolves #345
 **严格要求**：
 - ✅ 只使用 `🤖` 表情符号
 - ❌ 不使用 `Generated with [Claude Code](https://claude.com/claude-code)`
-- ❌ 不使用 `Co-Authored-By: Claude <noreply@anthropic.com>`
+- ❌ 不使用任何 `Co-Authored-By:` 行（包括 `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`）
 - ❌ 不添加任何其他标记或链接
 
-**重要**：当使用 Claude Code 帮助提交时，必须遵循此规范，不得添加额外的 Claude Code 标记。
+**重要**：当使用 Claude Code 帮助提交时，必须遵循此规范，提交信息末尾只保留 `🤖`，不得添加额外署名、链接或协作者标记。
 
 ### 完整提交示例
 
@@ -259,7 +259,7 @@ git push
 - [ ] Subject 简洁明了（≤50字符）
 - [ ] 复杂修改添加 Body
 - [ ] 破坏性变更添加 BREAKING CHANGE
-- [ ] 添加 Claude Code 标记
+- [ ] 仅添加 `🤖` 标记，且不包含任何 `Co-Authored-By:` 或 `Generated with` 行
 
 ### 提交后检查
 - [ ] 查看提交历史：`git log --oneline -5`

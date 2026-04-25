@@ -345,12 +345,12 @@ Closes #789
 2. **Type 和 Scope 准确**：准确描述修改类型和范围
 3. **Subject 简洁明了**：不超过50字符，祈使句
 4. **复杂修改添加 Body**：说明原因、内容、实现
-5. **添加 Claude Code 标记**：项目规范要求
+5. **仅添加 `🤖` 标记**：项目规范要求提交末尾只保留 `🤖`，不添加 `Co-Authored-By:` 或 `Generated with`
 
 ### ❌ 避免做法
 
 1. 提交信息太模糊（"update code"）
 2. Type 错误（"add" 应该用 "feat"）
-3. 忘记添加 Claude Code 标记
+3. 忘记添加 `🤖` 标记，或额外添加 `Co-Authored-By:` / `Generated with`
 4. Breaking Change 未声明
 5. 一次提交包含多个不相关修改
