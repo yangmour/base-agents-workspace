@@ -1,0 +1,7 @@
+interface:
+  display_name: "浏览器 CDP 控制"
+  short_description: "控制并读取浏览器标签页"
+  default_prompt: "使用 $browser-cdp-control 通过远程调试读取、控制并验证浏览器会话。"
+
+policy:
+  allow_implicit_invocation: true
