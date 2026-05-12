@@ -1,11 +1,11 @@
 ---
 name: git-commit-convention
-description: Git 提交规范 - 约定式提交（Conventional Commits）规范。用于规范化 Git commit 信息，提高代码历史可读性和可维护性。当需要提交代码时使用此技能。
+description: Git 提交规范与阶段性提交技能。凡是用户表达提交相关意图时都使用此技能，包括：提交代码、创建 commit、git commit、阶段性提交、先提交一下、保存当前进度、存个档、打 checkpoint、把改动提交、提交当前变更、整理提交信息、生成 commit message、查看变更后提交、提交并推送、push、发起 PR 前整理提交。用于规范化 Git commit 信息并安全执行或指导 git add / git commit / git push。
 ---
 
 # Git 提交规范
 
-> **触发场景**：当用户要求提交代码、创建 commit、推送代码时，使用此技能。
+> **触发场景**：当用户要求提交代码、创建 commit、推送代码，或用更口语的说法表达“保存当前 Git 进度”时，使用此技能。包括但不限于：`阶段性提交`、`先提交一下`、`提交当前变更`、`把改动提交`、`存个档`、`保存一下进度`、`打个 checkpoint`、`commit 一下`、`生成提交信息`、`整理 commit message`、`提交并推送`。
 
 ## 适用边界
 
