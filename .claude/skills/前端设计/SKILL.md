@@ -1,65 +1,80 @@
 ---
-name: frontend-design
-description: 前端设计与开发 - 创建独特的、生产级别的前端界面，具有高设计质量。当用户要求构建Web组件、页面、工件、海报或应用程序时使用此技能（例如网站、落地页、仪表板、React组件、HTML/CSS布局，或美化任何Web UI）。生成富有创意、精致的代码和UI设计，避免通用的AI美学。
+name: frontend-page-component-implementation
+description: 前端页面与组件实现技能。凡是创建或修改 node-base-module 中的 Vue 后台管理页面、组件、布局、路由页面、表单、表格、仪表盘、可视化页面、交互状态、响应式样式或局部界面质量时使用。只处理前端页面和组件实现；涉及后端接口字段、统一响应、请求头或跨仓库联调时使用“前后端契约联调”，涉及架构边界时使用“项目架构基线与边界判定”。实现时保留既有 Vue 3、TypeScript、Element Plus、Vite、Pinia、Vue Router 约定。
 ---
 
-This skill guides creation of distinctive, production-grade frontend interfaces that avoid generic "AI slop" aesthetics. Implement real working code with exceptional attention to aesthetic details and creative choices.
+# 前端页面与组件实现
 
-The user provides frontend requirements: a component, page, application, or interface to build. They may include context about the purpose, audience, or technical constraints.
+本技能用于项目内前端页面和组件开发，重点是可用、清晰、符合项目契约，并在不破坏既有设计系统的前提下提升界面质量。涉及后端接口或跨仓库契约时，使用 `前后端契约联调`；涉及架构边界时，先使用 `项目架构基线与边界判定`。
 
-## Design Thinking
+> 术语要求：说明性文字使用中文全称；文件路径、组件名、类型名、接口字段、样式类名、命令和枚举值保持项目真实写法。
 
-Before coding, understand the context and commit to a BOLD aesthetic direction:
-- **Purpose**: What problem does this interface solve? Who uses it?
-- **Tone**: Pick an extreme: brutally minimal, maximalist chaos, retro-futuristic, organic/natural, luxury/refined, playful/toy-like, editorial/magazine, brutalist/raw, art deco/geometric, soft/pastel, industrial/utilitarian, etc. There are so many flavors to choose from. Use these for inspiration but design one that is true to the aesthetic direction.
-- **Constraints**: Technical requirements (framework, performance, accessibility).
-- **Differentiation**: What makes this UNFORGETTABLE? What's the one thing someone will remember?
+## Claude Code 工作流
 
-**CRITICAL**: Choose a clear conceptual direction and execute it with precision. Bold maximalism and refined minimalism both work - the key is intentionality, not intensity.
+1. 先读再改：读取目标页面、组件、路由、状态管理、接口封装、类型定义和相邻页面，不凭空设计。
+2. 保持项目栈：主前端使用 Vue 3、TypeScript、Element Plus、Vite、Pinia、Vue Router，不引入新的状态库或组件库，除非用户明确要求。
+3. 先确认契约：涉及接口调用时，确认响应字段 `code`、`msg`、`data`、`traceId`，并同步 `src/types/api.d.ts` 和 `src/api/*.ts`。
+4. 最小改动：只修改当前页面或组件相关文件，不顺手重构全局布局或公共工具。
+5. 完整状态：异步页面至少考虑加载、空数据、错误、成功四类状态。
+6. 响应式验证：至少考虑三百七十五像素宽移动端和常见桌面宽度。
+7. 验证闭环：运行前端类型检查或构建；无法执行时记录原因。
 
-Then implement working code (HTML/CSS/JS, React, Vue, etc.) that is:
-- Production-grade and functional
-- Visually striking and memorable
-- Cohesive with a clear aesthetic point-of-view
-- Meticulously refined in every detail
+## 项目边界
 
-## Frontend Aesthetics Guidelines
+- 主前端项目：`node-base-module/base-admin-web/`。
+- 次级前端项目：`node-base-module/weixin-bot-admin/`。
+- 主前端接口类型：`src/types/api.d.ts`。
+- 主前端请求封装：`src/utils/request.ts`。
+- 主前端路由：`src/router/`。
+- 主前端状态管理：`src/stores/`。
 
-Focus on:
-- **Typography**: Choose fonts that are beautiful, unique, and interesting. Avoid generic fonts like Arial and Inter; opt instead for distinctive choices that elevate the frontend's aesthetics; unexpected, characterful font choices. Pair a distinctive display font with a refined body font.
-- **Color & Theme**: Commit to a cohesive aesthetic. Use CSS variables for consistency. Dominant colors with sharp accents outperform timid, evenly-distributed palettes.
-- **Motion**: Use animations for effects and micro-interactions. Prioritize CSS-only solutions for HTML. Use Motion library for React when available. Focus on high-impact moments: one well-orchestrated page load with staggered reveals (animation-delay) creates more delight than scattered micro-interactions. Use scroll-triggering and hover states that surprise.
-- **Spatial Composition**: Unexpected layouts. Asymmetry. Overlap. Diagonal flow. Grid-breaking elements. Generous negative space OR controlled density.
-- **Backgrounds & Visual Details**: Create atmosphere and depth rather than defaulting to solid colors. Add contextual effects and textures that match the overall aesthetic. Apply creative forms like gradient meshes, noise textures, geometric patterns, layered transparencies, dramatic shadows, decorative borders, custom cursors, and grain overlays.
+## 设计原则
 
-NEVER use generic AI-generated aesthetics like overused font families (Inter, Roboto, Arial, system fonts), cliched color schemes (particularly purple gradients on white backgrounds), predictable layouts and component patterns, and cookie-cutter design that lacks context-specific character.
+- 先服从既有产品结构，再提升局部体验。
+- 页面层级清晰，主要操作和次要操作有明显视觉差异。
+- 表单要有明确标签、校验反馈和提交状态。
+- 表格要有加载、空数据、分页、筛选和操作反馈。
+- 仪表盘要突出关键指标，不堆砌无解释的数据块。
+- 动效只用于状态变化、层级切换和关键反馈，不做无意义装饰。
+- 颜色、间距、阴影、圆角和字体层级保持一致。
 
-Interpret creatively and make unexpected choices that feel genuinely designed for the context. No design should be the same. Vary between light and dark themes, different fonts, different aesthetics. NEVER converge on common choices (Space Grotesk, for example) across generations.
+## 项目契约
 
-**IMPORTANT**: Match implementation complexity to the aesthetic vision. Maximalist designs need elaborate code with extensive animations and effects. Minimalist or refined designs need restraint, precision, and careful attention to spacing, typography, and subtle details. Elegance comes from executing the vision well.
+新增或修改接口调用时：
 
-Remember: Claude is capable of extraordinary creative work. Don't hold back, show what can truly be created when thinking outside the box and committing fully to a distinctive vision.
+- 统一响应字段使用 `code`、`msg`、`data`、`traceId`。
+- 错误提示读取 `msg`。
+- 不恢复 `message` 兼容字段。
+- 请求上下文头由全局请求封装处理，页面不要重复硬编码。
+- 不在组件中硬编码后端基础地址。
+- 权限、菜单、按钮和路由只做展示控制，最终权限由后端校验。
 
-## Repository Constraints (Must Follow)
+## 实现要求
 
-When working in this repository, apply these technical constraints first:
+- 保持组件职责单一，页面编排放在视图层，复用组件只承载稳定展示或交互。
+- 使用项目已有接口封装，不在页面里散落原始请求实现。
+- 使用 TypeScript 类型约束表单、列表、详情和接口响应。
+- 避免 `any`，除非外部库类型无法表达且范围很小。
+- 避免占位文案、无效按钮、未连接的数据源和未处理的异常分支。
+- 不新增与项目风格冲突的大型视觉体系。
 
-- Primary frontend path: `node-base-module/base-admin-web/` (Vue 3 + TypeScript + Element Plus + Vite).
-- Secondary frontend path: `node-base-module/weixin-bot-admin/` (Vue 3 + Vite).
-- Keep existing component conventions and route structure; avoid introducing a new state/library stack unless requested.
-- New API calls must align with backend contract fields: `code`, `msg`, `data`, `traceId`.
-- Prefer responsive layouts that work at least on 375px mobile width and common desktop widths.
+## 验证命令
 
-## Delivery Checklist (Before Finish)
+主前端项目按改动范围选择：
 
-- `npm run build` passes in the touched frontend module.
-- No obvious text overflow/overlap in mobile and desktop layouts.
-- Loading/empty/error states are present for async data views.
-- Colors, typography, and motion are consistent with one explicit visual direction.
-- Accessibility basics: interactive elements have clear hover/focus states and sufficient contrast.
+```bash
+npm --prefix /Users/awen/Desktop/dev/git/base/node-base-module/base-admin-web run type-check
+npm --prefix /Users/awen/Desktop/dev/git/base/node-base-module/base-admin-web run build
+```
 
-## Anti-Patterns (Do Not)
+次级前端项目按实际目录执行构建命令。
 
-- Do not output only static mockup-like HTML when the task requires functional interaction.
-- Do not leave placeholder assets/text (e.g., lorem ipsum, TODO) in final output.
-- Do not hardcode backend URLs in components; route through project API utilities/config.
+## 完成前检查
+
+- [ ] 已读取目标页面、组件和相邻实现。
+- [ ] 没有破坏既有路由、状态管理和接口封装约定。
+- [ ] 接口响应字段仍为 `code`、`msg`、`data`、`traceId`。
+- [ ] 加载、空数据、错误、成功状态完整。
+- [ ] 移动端和桌面端没有明显溢出、遮挡或错位。
+- [ ] 交互元素有清晰悬停、聚焦、禁用和加载状态。
+- [ ] 已执行类型检查或构建，或记录未执行原因。

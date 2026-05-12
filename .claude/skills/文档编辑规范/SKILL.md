@@ -1,534 +1,134 @@
 ---
-name: doc-changelog
-description: 数据库变更和配置变更的递增式管理规范。使用场景：(1) 创建/修改数据库表结构时生成 Vx__xxx.sql 文件，(2) 修改应用配置时更新 CHANGELOG_CONFIG.md，(3) 需要回滚方案时编写 rollback/Vx__rollback.sql，(4) 文档超过500行时按年份/版本拆分归档。触发关键词：SQL变更、数据库迁移、配置管理、CHANGELOG、版本控制、回滚脚本、数据库变更记录。
+name: database-config-change-management
+description: 数据库与配置变更递增管理技能。凡是新增或修改数据库结构、索引、约束、初始化数据、迁移脚本、回滚脚本、应用配置、配置变更记录、数据库变更说明或配置变更说明时使用。只处理可执行的数据库与配置变更链路；纯 Markdown 技术文档、接口文档、设计文档和架构状态记录使用“技术文档与架构状态记录”。后端代码实现使用“Java 微服务后端实现”。提交使用“Git 提交规范”。
 ---
 
-# 文档编辑规范技能书
+# 数据库与配置变更递增管理
 
-> 本技能书专注于**数据库变更**和**配置变更**的递增式管理，确保每次改动都有据可查
+本技能只处理数据库脚本和应用配置变更的递增式管理；架构口径以 `项目架构基线` 为准，纯技术文档写作结构以 `技术文档与架构状态记录` 为准。
 
-## 📋 规范概述
+> 术语要求：说明性文字使用中文全称；文件名、目录名、脚本版本号、命令、数据库产品名和配置键保持项目真实写法。
 
-本规范用于管理项目中的**SQL文件递增**和**配置文件递增**，确保：
-- ✅ 每次数据库变更都有完整的SQL脚本
-- ✅ 每次配置修改都有清晰的记录
-- ✅ 支持版本回滚和追溯
-- ✅ 文档过大时按规则拆分
+## Claude Code 工作流
 
-## 🧭 适用边界
+1. 先读现状：读取目标模块既有数据库变更目录、回滚目录、说明文档、变更日志和实际配置文件。
+2. 先判边界：确认变更属于数据库结构、初始化数据、索引、应用配置还是纯文档。
+3. 递增处理：已发布或已执行过的版本脚本不得直接修改，新增下一版本脚本和对应回滚脚本。
+4. 三库兼容：数据库脚本说明和实现要考虑 MySQL、PostgreSQL、SQLite 的兼容差异。
+5. 同步索引：同步更新说明文档、变更日志、执行顺序和回滚说明。
+6. 记录验证：写明执行命令、检查语句、回滚验证方式；无法执行时记录原因。
 
-### 适用
-- 新增/修改数据库结构，需要落地迁移 SQL 与回滚 SQL
-- 修改应用配置（`application*.yml`/`bootstrap*.yml`），需要更新配置变更记录
+## 适用边界
 
-### 不适用
-- 仅编写 README/设计文档/API 说明（使用 `技术文档编写`）
-- 仅提交代码或规范 commit message（使用 `Git提交规范`）
+适用：
 
-## 📦 标准产出（必须同时具备）
-- 迁移脚本：`base-module/docs/sql/V{n}__{desc}.sql`（或服务内 `docs/数据库变更/db/V{n}__{desc}.sql`，以当前模块既有目录为准）
-- 回滚脚本：同目录下 `rollback/V{n}__rollback.sql`
-- 变更记录：`CHANGELOG.md` 或 `CHANGELOG_CONFIG.md` 的对应条目
-- 目录索引：相关目录 `README.md`/`INDEX.md` 的导航更新
-- 验证步骤：至少 1 条“执行后检查 SQL/命令”
+- 新增或修改数据库表结构。
+- 新增或修改索引、约束、初始化数据、迁移数据。
+- 新增下一版本脚本和对应回滚脚本。
+- 修改应用配置并需要记录环境、键名、默认值、影响范围和回滚方式。
+- 数据库变更说明文档或配置变更说明文档超过五百行，需要归档拆分。
 
-## 🎯 核心原则
+不适用：
 
-### 1. 递增式管理
-- SQL文件按版本递增（V1, V2, V3...）
-- 配置变更按时间记录
-- 每次变更独立可追溯
+- 仅编写说明文档、接口文档、设计文档，使用 `技术文档编写`。
+- 仅实现后端代码，使用 `Java微服务开发`。
+- 仅提交代码，使用 `Git提交规范`。
 
-### 2. 完整性保证
-- 提供完整的SQL脚本
-- 提供回滚方案
-- 记录变更原因和影响
+## 标准产出
 
-### 3. 自动拆分
-- 单个CHANGELOG文件超过500行时必须拆分
-- 按年份或版本归档
-- 在README.md中建立索引
+一次数据库或配置变更至少包含：
 
-### 4. 可导航
-- 新增说明文档（非 SQL）时，文件名使用序号前缀：`01-xxx.md`、`02-xxx.md`
-- `docs/数据库变更/README.md`、`docs/配置变更/README.md` 必须维护按序导航
-- 新增/删除/重命名后，同步更新索引与内部链接，避免“有文件无入口”
+- 迁移脚本：沿用当前模块既有目录，例如 `base-module/docs/sql/V{n}__{desc}.sql` 或服务内 `docs/数据库变更/db/V{n}__{desc}.sql`。
+- 回滚脚本：同目录下 `rollback/V{n}__rollback.sql`。
+- 变更记录：`CHANGELOG.md` 或 `CHANGELOG_CONFIG.md` 的对应条目。
+- 目录索引：相关目录 `README.md` 或 `INDEX.md` 的导航更新。
+- 验证步骤：至少一条执行后检查命令或检查语句。
 
+## 版本规则
 
-## 📁 核心管理内容
-
-### 1. SQL文件递增管理 ⭐ 核心
-
-#### 目录结构
-优先遵循仓库级目录：`base-module/docs/sql/`；若某个服务已有独立数据库变更体系，则沿用服务内 `docs/数据库变更/db/`，不要在同一模块内混用两套目录。
-
-```
-server/auth-center/
-├── docs/
-│   └── 数据库变更/                         # 数据库变更文档（必须）
-│   │    ├── README.md                       # 变更记录索引
-│   │    ├── CHANGELOG.md                    # 详细变更记录
-│   │    └── 归档/                           # 历史归档（可选）
-│   │        └── CHANGELOG_2024.md
-    └──  数据库变更/db/
-          ├── V1__schema-auth-center.sql         # 初始化脚本
-          ├── V2__add-business-line.sql          # 新增业务线字段
-          ├── V3__add-login-log-table.sql        # 新增登录日志表
-          └── rollback/                           # 回滚脚本目录
-               ├── V2__rollback.sql
-               └── V3__rollback.sql
-```
-
-#### SQL文件命名规范
-```
-V{版本号}__{描述}.sql
+- 版本号按当前目录最大版本递增。
+- 文件名格式使用 `V{版本号}__{英文短描述}.sql`。
+- 回滚脚本版本号必须与迁移脚本一致。
+- 已发布或已在任何环境执行过的 `V*.sql` 禁止直接修改。
+- 仅当当前分支未发布且团队明确同意重排版本时，才允许调整历史脚本。
 
 示例：
-V1__schema-auth-center.sql          # 初始化数据库
-V2__add-business-line.sql           # 新增业务线字段
-V3__add-login-log-table.sql         # 新增登录日志表
-V4__modify-user-token-index.sql     # 修改索引
-V5__migrate-user-data.sql           # 数据迁移
+
+```text
+V1__schema-auth-center.sql
+V2__add-business-line.sql
+V3__add-login-log-table.sql
+rollback/V2__rollback.sql
+rollback/V3__rollback.sql
 ```
 
-#### SQL修改规则（强制）
-- 已发布或已在任何环境执行过的 `V*.sql` 禁止直接改内容。
-- 任何结构/索引/数据修正都必须新增下一个版本脚本（如 `V6__fix-xxx.sql`）。
-- 对应回滚脚本必须同步新增：`rollback/V6__rollback.sql`。
-- 必须同步更新 `docs/数据库变更/README.md` 和 `CHANGELOG.md` 的条目与执行顺序。
-- 仅允许修改历史 SQL 的场景：当前分支未发布且团队明确同意重排版本。
+## 脚本内容要求
 
-#### SQL文件内容规范
-每个SQL文件必须包含：
+每个迁移脚本建议包含：
 
 ```sql
 -- ============================================
 -- 版本: V2
 -- 描述: 新增业务线字段支持多租户
--- 作者: 开发团队
--- 日期: 2025-01-28
+-- 日期: 2026-05-12
 -- 依赖: V1__schema-auth-center.sql
 -- 回滚: rollback/V2__rollback.sql
 -- ============================================
 
--- 1. 新增字段
-ALTER TABLE user ADD COLUMN business_line VARCHAR(50) NOT NULL DEFAULT 'DEFAULT' COMMENT '业务线';
-
--- 2. 新增索引
-CREATE INDEX idx_business_line ON user(business_line);
-
--- 3. 数据迁移（如需要）
-UPDATE user SET business_line = 'DEFAULT' WHERE business_line IS NULL;
-
--- 4. 验证
-SELECT COUNT(*) FROM user WHERE business_line IS NULL;
--- 预期结果: 0
-
--- ============================================
--- 变更说明:
--- 1. user表新增business_line字段
--- 2. 所有现有用户默认设置为DEFAULT业务线
--- 3. 新增索引提升查询性能
--- ============================================
+ALTER TABLE user ADD COLUMN business_line VARCHAR(50) NOT NULL DEFAULT 'COMMON' COMMENT '业务线';
+CREATE INDEX idx_user_business_line ON user(business_line);
 ```
 
-#### 回滚脚本规范
-每个SQL变更必须有对应的回滚脚本：
+每个回滚脚本建议包含：
 
 ```sql
 -- ============================================
 -- 回滚版本: V2
 -- 描述: 回滚业务线字段
--- 作者: 开发团队
--- 日期: 2025-01-28
 -- ============================================
 
--- 1. 删除索引
-DROP INDEX IF EXISTS idx_business_line ON user;
-
--- 2. 删除字段
-ALTER TABLE user DROP COLUMN IF EXISTS business_line;
-
--- 3. 验证
-SHOW COLUMNS FROM user LIKE 'business_line';
--- 预期结果: Empty set
-
--- ============================================
--- 回滚说明:
--- 1. 删除business_line字段
--- 2. 删除相关索引
--- 注意: 数据将丢失，请提前备份
--- ============================================
+DROP INDEX idx_user_business_line ON user;
+ALTER TABLE user DROP COLUMN business_line;
 ```
 
-#### docs/数据库变更/README.md 索引文件
-```markdown
-# 数据库变更记录
+## 配置变更记录
 
-> 本目录记录所有数据库变更的详细信息
+修改配置时记录：
 
-## 📋 SQL文件列表
+- 环境：开发、测试、预发、生产或全部。
+- 键名：完整配置键。
+- 默认值：新增或修改后的默认值。
+- 影响范围：服务、模块、接口或页面。
+- 回滚方式：恢复旧值、删除键或重新导入配置。
+- 验证方式：启动检查、健康检查、接口检查或日志检查。
 
-| 版本 | SQL文件 | 描述 | 日期 | 状态 |
-|------|---------|------|------|------|
-| V1 | V1__schema-auth-center.sql | 初始化数据库 | 2025-01-20 | ✅ 已执行 |
-| V2 | V2__add-business-line.sql | 新增业务线字段 | 2025-01-28 | ✅ 已执行 |
-| V3 | V3__add-login-log-table.sql | 新增登录日志表 | 2025-01-28 | ✅ 已执行 |
-| V4 | V4__modify-user-token-index.sql | 优化Token查询索引 | 2025-01-29 | ⏳ 待执行 |
-
-## 🔄 执行顺序
-SQL文件必须按版本号顺序执行：V1 → V2 → V3 → V4
-
-**SQL文件位置**: `docs/数据库变更/db`
-
-## 📝 变更详情
-
-详见 [CHANGELOG.md](./CHANGELOG.md)
-
-## 🚀 快速执行
-
-### MySQL
-```bash
-mysql -u root -p auth_center < docs/数据库变更/db/V2__add-business-line.sql
-```
-
-### PostgreSQL
-```bash
-psql -U postgres -d auth_center -f docs/数据库变更/db/V2__add-business-line.sql
-```
-```
-
-#### docs/数据库变更/CHANGELOG.md 详细记录
+建议条目：
 
 ```markdown
-# 数据库变更详细记录
-
-## [V2] - 2025-01-28 - 新增业务线字段
-
-### 变更内容
-- user表新增business_line字段
-- 新增索引idx_business_line
-- 数据迁移：所有用户设置为DEFAULT
-
-### SQL文件
-- 执行脚本: `docs/数据库变更/db/V2__add-business-line.sql`
-- 回滚脚本: `docs/数据库变更/db/rollback/V2__rollback.sql`
-
-### 影响范围
-- user表：新增1个字段，新增1个索引
-- 数据迁移：约1000条记录
-
-### 执行命令
-```bash
-# MySQL
-mysql -u root -p auth_center < docs/数据库变更/db/V2__add-business-line.sql
-
-# PostgreSQL  
-psql -U postgres -d auth_center -f docs/数据库变更/db/V2__add-business-line.sql
+| 日期 | 环境 | 配置键 | 变更 | 影响范围 | 回滚方式 | 验证方式 |
+|---|---|---|---|---|---|---|
+| 2026-05-12 | 开发 | auth.token.refresh-path | 新增 `/api/iam/token/refresh` | 身份与访问管理中心、网关 | 删除该键或恢复旧路径 | 启动服务并请求刷新接口 |
 ```
 
-### 验证方法
-```sql
--- 检查字段
-SHOW COLUMNS FROM user LIKE 'business_line';
-
--- 检查数据
-SELECT COUNT(*) FROM user WHERE business_line IS NULL;
--- 预期: 0
-```
-
-### 回滚方法
-```bash
-mysql -u root -p auth_center < docs/数据库变更/db/rollback/V2__rollback.sql
-```
-
-### 相关文档
-- [多业务线架构](../设计文档/多业务线架构.md)
-
----
-
-## [V1] - 2025-01-20 - 初始化数据库
-
-### 变更内容
-- 创建user表
-- 创建user_token表
-- 创建role、permission等权限表
-
-### SQL文件
-- 执行脚本: `docs/数据库变更/db/V1__schema-auth-center.sql`
-
-### 相关文档
-- [认证中心完整实现](../实现指南/认证中心完整实现.md)
-```
-
----
-
-### 2. 配置文件递增管理 ⭐ 核心
-
-#### 配置变更记录文件
-每个服务维护一个配置变更记录：`CHANGELOG_CONFIG.md`
-
-```markdown
-# 配置变更记录
-
-## [v2.1.0] - 2025-01-28
-
-### 新增配置
-- **配置项**: `auth.business-line.enabled`
-  - 文件: `application.yml`
-  - 值: `true`
-  - 说明: 启用多业务线功能
-  - 配置示例:
-    ```yaml
-    auth:
-      business-line:
-        enabled: true
-        default: DEFAULT
-        allowed:
-          - DEFAULT
-          - BUSINESS_A
-          - BUSINESS_B
-    ```
-
-### 修改配置
-- **配置项**: `spring.redis.timeout`
-  - 文件: `application.yml`
-  - 原值: `3000ms`
-  - 新值: `5000ms`
-  - 原因: 网络延迟导致超时
-
-### 环境差异配置
-- **环境**: `prod`
-  - 文件: `application-prod.yml`
-  - 变更:
-    ```yaml
-    spring:
-      redis:
-        host: redis-prod.example.com
-        password: ${REDIS_PASSWORD}
-    ```
-
----
-
-## [v2.0.0] - 2025-01-20
-...
-```
-
-#### 配置文件版本化
-重要配置变更需要保留历史版本：
-
-```
-server/auth-center/src/main/resources/
-├── application.yml                    # 当前版本
-├── application-local.yml
-├── application-dev.yml
-├── application-prod.yml
-└── config-history/                    # 配置历史（可选）
-    ├── application-v2.0.0.yml
-    └── application-v2.1.0.yml
-```
-
----
-
-## 📝 文档拆分规则
-
-### 触发条件
-当CHANGELOG文件超过500行时，按以下方式拆分：
-
-#### 方式1: 按年份拆分
-```
-server/auth-center/
-├── CHANGELOG_CONFIG.md              # 当前年份
-├── CHANGELOG_CONFIG_2024.md         # 2024年归档
-└── CHANGELOG_CONFIG_2023.md         # 2023年归档
-```
-
-#### 方式2: 按版本拆分
-```
-server/auth-center/
-├── CHANGELOG_CONFIG.md              # v3.x
-├── CHANGELOG_CONFIG_v2.md           # v2.x归档
-└── CHANGELOG_CONFIG_v1.md           # v1.x归档
-```
-
-### 拆分后的索引
-在主CHANGELOG文件顶部添加归档链接：
-
-```markdown
-# 配置变更记录
-
-> 当前版本: v3.x
-
-## 📚 历史归档
-- [v2.x 配置变更](./CHANGELOG_CONFIG_v2.md)
-- [v1.x 配置变更](./CHANGELOG_CONFIG_v1.md)
-
----
-
-## [v3.0.0] - 2025-02-01
-...
-```
-
----
-
-## 🛠️ 实用工具
-
-### 1. SQL文件生成脚本
-```bash
-#!/bin/bash
-# 生成新的SQL文件
-
-# 获取最新版本号
-LATEST_VERSION=$(ls docs/数据库变更/db/V*.sql | sed 's/.*V\([0-9]*\)__.*/\1/' | sort -n | tail -1)
-NEW_VERSION=$((LATEST_VERSION + 1))
-
-# 输入描述
-read -p "请输入变更描述（英文，用-连接）: " DESC
-
-# 生成文件
-SQL_FILE="docs/数据库变更/db/V${NEW_VERSION}__${DESC}.sql"
-ROLLBACK_FILE="docs/数据库变更/db/rollback/V${NEW_VERSION}__rollback.sql"
-
-# 创建SQL文件
-cat > "$SQL_FILE" << EOF
--- ============================================
--- 版本: V${NEW_VERSION}
--- 描述: ${DESC}
--- 作者: $(git config user.name)
--- 日期: $(date +%Y-%m-%d)
--- 依赖: V${LATEST_VERSION}__*.sql
--- 回滚: rollback/V${NEW_VERSION}__rollback.sql
--- ============================================
-
--- 在这里编写SQL语句
-
--- ============================================
--- 变更说明:
--- 
--- ============================================
-EOF
-
-# 创建回滚文件
-cat > "$ROLLBACK_FILE" << EOF
--- ============================================
--- 回滚版本: V${NEW_VERSION}
--- 描述: 回滚 ${DESC}
--- 作者: $(git config user.name)
--- 日期: $(date +%Y-%m-%d)
--- ============================================
-
--- 在这里编写回滚SQL
-
--- ============================================
--- 回滚说明:
--- 
--- ============================================
-EOF
-
-echo "✅ 已创建文件:"
-echo "   - $SQL_FILE"
-echo "   - $ROLLBACK_FILE"
-```
-
-### 2. 配置变更检查脚本
-```bash
-#!/bin/bash
-# 检查配置文件是否有未记录的变更
-
-# 检查git diff
-CHANGED_CONFIGS=$(git diff --name-only | grep -E "application.*\.yml|bootstrap.*\.yml")
-
-if [ -n "$CHANGED_CONFIGS" ]; then
-    echo "⚠️  检测到配置文件变更:"
-    echo "$CHANGED_CONFIGS"
-    echo ""
-    echo "请确保已更新 CHANGELOG_CONFIG.md"
-    exit 1
-else
-    echo "✅ 没有配置文件变更"
-fi
-```
-
-### 3. 文档行数统计
-```bash
-# 检查CHANGELOG文件是否需要拆分
-wc -l CHANGELOG_CONFIG.md
-
-# 如果超过500行，提示拆分
-if [ $(wc -l < CHANGELOG_CONFIG.md) -gt 500 ]; then
-    echo "⚠️  CHANGELOG_CONFIG.md 超过500行，建议拆分"
-fi
-```
-
----
-
-## 📚 最佳实践
-
-### 1. SQL变更最佳实践
-
-#### ✅ 推荐做法
-- 每个SQL文件只做一件事
-- 提供完整的回滚脚本
-- 包含验证SQL
-- 大表变更使用在线DDL工具（如pt-online-schema-change）
-
-#### ❌ 避免做法
-- 不要在一个文件中混合多个不相关的变更
-- 不要直接修改已执行的SQL文件
-- 不要忘记写回滚脚本
-
-### 2. 配置变更最佳实践
-
-#### ✅ 推荐做法
-- 敏感配置使用环境变量
-- 配置变更前先在测试环境验证
-- 记录配置变更的原因
-- 提供配置示例
-
-#### ❌ 避免做法
-- 不要在代码中硬编码配置
-- 不要直接修改生产环境配置
-- 不要忘记更新CHANGELOG
-
-### 3. 版本管理最佳实践
-
-#### SQL版本号规则
-- 使用递增整数：V1, V2, V3...
-- 不要跳号
-- 不要重复使用版本号
-
-#### 配置版本号规则
-- 跟随应用版本号：v2.1.0
-- 使用语义化版本
-- 主版本号变更时归档旧配置
-
----
-
-## 🔗 相关资源
-
-### 模板文件
-- [SQL文件模板](templates/sql-template.sql)
-- [回滚脚本模板（使用 SQL 文件模板并保留回滚段）](templates/sql-template.sql)
-- [配置变更记录模板](templates/CHANGELOG_CONFIG.md)
-
-### 工具脚本
-- [SQL文件生成器](scripts/generate-sql.sh)
-- [配置变更检查器](scripts/check-config.sh)
-
----
-
-**最后更新**: 2025-01-28  
-**维护人员**: 开发团队  
-**版本**: v2.0
-
-## ✅ 验收清单（提交前）
-- [ ] SQL 与 rollback 成对存在，版本号一致
-- [ ] 变更记录已更新（含原因、影响、验证、回滚）
-- [ ] 版本号连续，无跳号/重复号
-- [ ] 未直接修改已发布历史 `V*.sql`，修正通过新增版本完成
-- [ ] 配置改动已记录到 `CHANGELOG_CONFIG.md`
-- [ ] 提供了可执行的验证步骤
-- [ ] 数据库相关改动已验证兼容 SQLite、MySQL、PostgreSQL；若不能单文件兼容，已拆分多方言脚本并在文档中注明默认路径
-- [ ] SQL 中所有新增/修改字段均已补齐注释
-- [ ] 新增说明文档已按序号命名（如 `01-xxx.md`）
-- [ ] 对应目录 `README.md`/`INDEX.md` 已更新，能从索引直达文档
+## 索引和归档
+
+- 数据库变更目录必须维护 `README.md` 或 `INDEX.md`。
+- 配置变更目录必须维护 `README.md` 或 `INDEX.md`。
+- 变更日志超过五百行时，按年份或版本归档，并在主索引中保留入口。
+- 新增、删除、重命名脚本时，同步更新执行顺序、回滚说明和关联链接。
+
+## 兼容性要求
+
+- MySQL、PostgreSQL、SQLite 差异要在脚本或说明中明确。
+- 不同数据库无法共用同一语法时，按当前模块既有约定分别维护脚本。
+- 默认值、索引长度、布尔值、时间类型、注释语法要逐项确认。
+
+## 完成前检查
+
+- [ ] 没有直接修改已发布或已执行的历史版本脚本。
+- [ ] 已新增下一版本迁移脚本。
+- [ ] 已新增同版本回滚脚本。
+- [ ] 已同步说明文档、索引或变更日志。
+- [ ] 已考虑 MySQL、PostgreSQL、SQLite 兼容性。
+- [ ] 已记录执行验证和回滚验证方式。
+- [ ] 配置变更已记录环境、键名、默认值、影响范围和回滚方式。

@@ -1,655 +1,160 @@
 ---
-name: java-microservice
-description: 后端Java微服务开发指南。触发场景：写接口、测试接口、创建接口、写Service、创建Service、业务逻辑、写Mapper、创建Mapper、查询数据库、操作数据库、数据访问层、开发Spring Boot服务、实现Controller/Service/Mapper、使用MyBatis-Plus操作数据库、集成Redis缓存/分布式锁、创建Feign客户端、使用base-*公共模块（base-basic/base-redis/base-knife4j等）。核心要求：分层清晰、DTO/VO分离、Feign返回业务对象（非RI嵌套）、异常统一由base-basic处理。不适用于前端开发、前后端联调。
+name: java-microservice-backend-implementation
+description: Java 微服务后端实现技能。凡是修改 base-module 中的控制器、服务、数据访问、实体、请求对象、视图对象、数据传输对象、Spring Boot 配置、MyBatis-Plus 数据访问、Redis、RabbitMQ、分布式锁、网关过滤器、身份与访问管理、权限、租户、业务线、审计相关后端代码时使用。只处理后端代码实现与后端验证；架构边界先用“项目架构基线与边界判定”，跨前后端契约用“前后端契约联调”，数据库脚本和配置变更用“数据库与配置变更递增管理”。
 ---
 
-# Java 微服务开发
+# Java 微服务后端实现
 
-> **提示词触发场景**：当用户提到以下关键词时，使用此技能：
-> - **Controller层**："写接口"、"测试接口"、"创建接口"、"Controller"、"API"、"REST API"
-> - **Service层**："写Service"、"创建Service"、"业务逻辑"、"业务层"
-> - **Mapper层**："写Mapper"、"创建Mapper"、"数据访问层"、"DAO"、"查询数据库"、"操作数据库"
-> - **框架相关**："Spring Boot"、"MyBatis-Plus"、"Feign客户端"、"Redis缓存"、"分布式锁"
-> - **实体类**："Entity"、"实体类"、"DTO"、"VO"
+本技能只保留后端代码实现层面的操作规范；架构边界、统一响应目标、租户业务线、网关职责、公共模块边界、审计事件和第零优先级任务口径，以 `项目架构基线与边界判定` 为准，不在本技能重复展开。
 
-本技能提供在此项目中开发 Spring Boot 微服务的指南，遵循已建立的模式和规范。
+> 术语要求：说明性文字使用中文全称；类名、方法名、包名、文件名、命令、请求头、路径、枚举值保持项目真实写法。
 
-## 项目结构
+## 适用边界
 
-```
-base-module/
-├── common/              # 共享模块
-│   ├── base-basic/     # 基础功能（响应封装、异常处理、过滤器）
-│   ├── base-redis/     # Redis缓存和分布式锁
-│   ├── base-knife4j/   # API文档（Spring MVC版本）
-│   ├── base-knife4j-webflux/  # API文档（Spring WebFlux版本）
-│   └── base-feignClients/ # Feign客户端
-├── server/             # 微服务
-│   ├── auth-center/    # 认证中心
-│   ├── api-gateway/    # API网关（WebFlux）
-│   ├── im-service/     # 即时通讯服务（WebFlux）
-│   ├── file-service/   # 文件服务（WebFlux）
-│   └── examples/       # 示例服务
-└── docs/               # 文档
-```
+适用：
 
-## 核心原则
+- 修改 `base-module/` 内 Java 后端代码。
+- 新增或修改控制器、服务、数据访问、过滤器、配置、实体、请求对象、视图对象、数据传输对象。
+- 调整后端内部声明式服务调用契约与调用方。
+- 处理后端权限、租户、业务线、网关、审计相关实现。
 
-### 1. 模块化设计
-- 公共功能放在 `common/` 模块
-- 业务服务放在 `server/` 模块
-- Feign客户端独立模块，便于其他服务依赖
+不适用：
 
-### 2. 统一响应格式（按当前仓库实践）
-**对外接口保持 `code/msg/data/traceId` 契约；Controller 可返回 `RI<T>/R<T>`，也可返回业务对象由 base-basic 自动包装。**
+- 只判断架构方向、服务职责或第零优先级状态，使用 `项目架构基线与边界判定`。
+- 同时影响前端类型、接口封装或页面，使用 `前后端契约联调` 统筹。
+- 只创建数据库迁移、回滚脚本或应用配置记录，使用 `数据库与配置变更递增管理`。
+- 只写 Markdown 文档或状态记录，使用 `技术文档与架构状态记录`。
+- 只提交代码，使用 `Git 提交规范`。
+
+## 工作流
+
+1. 先确认改动仓库：后端代码必须在 `/Users/awen/Desktop/dev/git/base/base-module` 独立仓库内处理。
+2. 先读事实来源：读取目标模块的现有控制器、服务、数据访问、请求对象、视图对象、数据传输对象、实体和配置，不基于猜测改代码。
+3. 先定边界：判断改动属于网关、身份与访问管理中心、后台控制台、文件服务、公共模块还是规划中的授权、租户、审计能力。
+4. 最小改动：只实现当前需求需要的代码，不顺手重构无关代码，不把临时业务逻辑下沉到公共模块。
+5. 同步契约：如果影响前端、声明式服务调用或数据库脚本，转交对应技能同步处理。
+6. 验证闭环：运行最小必要 Maven 命令，记录无法执行的原因和后续验证方式。
+
+## 架构基线
+
+开发前优先核对：
+
+- `base-module/docs/架构设计/01-大型通用服务总体架构.md`
+- `base-module/docs/架构设计/02-IAM身份权限架构设计.md`
+- `base-module/docs/架构设计/03-权限与数据权限模型设计.md`
+- `base-module/docs/架构设计/04-租户组织与业务线模型设计.md`
+- `base-module/docs/架构设计/05-网关与请求链路设计.md`
+- `base-module/docs/架构设计/06-公共模块边界设计.md`
+- `base-module/docs/架构设计/07-审计事件与消息机制设计.md`
+- `base-module/docs/架构设计/P0-架构决策与代码重构任务清单.md`
+
+只在需要确认架构决策时读取上述文档；日常编码优先读目标模块现有实现。
+
+## 模块边界
+
+| 模块 | 开发关注点 | 禁止事项 |
+|---|---|---|
+| `server/api-gateway` | 路由、白名单、跨域、限流、链路追踪标识、访问令牌基础校验、可信头注入 | 不组装角色、菜单、按钮权限；不裁决复杂业务权限和数据权限 |
+| `server/auth-center` | 身份、账号、认证、令牌、会话、权限快照入口、风控入口、认证事件 | 不把后台控制台展示逻辑混入核心身份能力 |
+| `server/admin` | 后台控制台接口、菜单、路由、按钮、管理配置、必要的身份与访问管理门面 | 不长期沉淀核心身份与访问管理业务规则 |
+| `server/file` | 文件上传下载、元数据、访问控制、配额、文件审计 | 不照搬普通同步服务写法处理响应式链路 |
+| `common/*` | 稳定基础能力、跨服务契约、公共异常、链路追踪、缓存、消息队列 | 不承载临时业务逻辑和服务专属规则 |
+
+## 分层规则
+
+| 类型 | 用途 | 目录 | 命名示例 |
+|---|---|---|---|
+| 实体 | 数据库映射，服务内部使用 | `domain/` | `User` |
+| 请求对象 | 接收外部请求 | `request/` | `UserCreateRequest` |
+| 数据传输对象 | 服务间传输 | `dto/` | `UserDTO` |
+| 视图对象 | 对外响应 | `vo/` | `UserVO` |
+
+要求：
+
+- 控制器只做参数接收、认证上下文读取和响应返回。
+- 事务和业务编排放到服务层。
+- 数据访问只通过数据访问对象或仓储对象。
+- 实体不直接作为对外响应。
+- 同一语义使用同一词根，不混用 `User`、`Member`、`Account`、`Profile` 表达同一概念。
+- 不新增 `Entity`、`DO`、`PO`、`Pojo` 等随意后缀的实体命名。
+
+## 统一响应与异常
+
+- 对外接口保持 `code`、`msg`、`data`、`traceId` 字段契约。
+- 控制器可返回 `RI<T>` 或 `R<T>`，也可返回业务对象由统一包装层处理。
+- 业务异常使用 `BizException`。
+- 日志不打印密码、令牌、完整手机号、身份证号等敏感字段。
+
+示例：
 
 ```java
-// 公开 API
-@PostMapping("/login")
-public RI<TokenResponse> login(@RequestBody LoginRequest request) {
-    return RI.ok(response);
-}
-
-// 直接返回对象（由 ResponseBodyAdvice 自动包装）
+@Operation(summary = "查询用户详情")
 @GetMapping("/{id}")
-public UserVO getById(@PathVariable Long id) {
-    return userService.getById(id);
-}
-
-// 内部 Feign：客户端接口返回业务 DTO（不要在客户端侧使用 RI）
-@Override
-public UserDTO getUser(@PathVariable Long id) {
-    return user;
-}
-
-// 响应式接口（WebFlux）
-@PostMapping("/send")
-public RI<MessageDTO> sendMessage(@RequestBody SendMessageRequest request) {
-    return RI.ok(message);
+public RI<UserVO> getById(@PathVariable Long id) {
+    return RI.ok(userService.getUserVO(id));
 }
 ```
 
-### 3. 异常处理
-使用 `BizException` 抛出业务异常，由 `GlobalExceptionHandler` 统一处理：
-```java
-if (user == null) {
-    throw new BizException("用户不存在");
-}
-```
+## 声明式服务调用
 
-### 4. DTO/Request/VO 严格分离
-**核心规范**：**dto只放dto，vo只放vo，实体只放实体，请求只放请求实体**
+声明式服务调用契约统一放在 `common/base-feignClients`。
 
-- **Entity（实体）**: 仅在服务内部使用，映射数据库表
-- **Request（请求）**: 用于接收客户端请求参数
-- **VO（视图对象）**: 用于返回响应数据给前端
-- **DTO（传输对象）**: 用于服务间 Feign 调用传输
+规则：
 
-**四同强约束（新增）**：
-- **同语义同词根**：如用户统一用 `User`，不要混用 `Member/Account/Profile`。
-- **同类型同后缀**：
-  - 实体：`User`（无后缀）
-  - Request：`UserCreateRequest` / `UserQueryRequest`
-  - DTO：`UserDTO`
-  - VO：`UserVO`
-- **同类型同目录**：
-  - 实体只在 `domain/`
-  - Request 只在 `request/`
-  - DTO 只在 `dto/`
-  - VO 只在 `vo/`
-- **同类型同命名风格**：禁止同仓库同时出现 `UserDTO` 与 `UserDto`、`UserVO` 与 `UserVo`。
+- 客户端方法返回业务数据传输对象或视图对象，不返回 `RI` 或 `R`。
+- 内部控制器实现对应客户端接口。
+- 不在业务服务中重复定义同类客户端。
+- 契约变更必须同步所有调用方；如影响前端，使用 `全栈开发规范`。
 
-**详细规范**：参考 [references/dto-vo-separation.md](references/dto-vo-separation.md)
-
-**快速示例**：
-```java
-// Controller 层：使用 Request 接收，返回 VO
-@PostMapping
-public RI<Long> createRole(@RequestBody @Valid RoleCreateRequest request) {
-    Role role = new Role();
-    BeanUtils.copyProperties(request, role);  // Request → Entity
-    Role created = roleService.createRole(role);
-    return RI.ok(created.getId());
-}
-
-@GetMapping("/{id}")
-public RI<RoleVO> getRoleById(@PathVariable Long id) {
-    Role role = roleService.getById(id);  // Entity（内部使用）
-    return RI.ok(VoConverter.toRoleVO(role));  // Entity → VO
-}
-
-// ❌ 错误：不要直接返回 Entity
-@GetMapping("/{id}")
-public RI<Role> getRole(@PathVariable Long id) {
-    return RI.ok(roleService.getById(id));  // ❌ 暴露了数据库字段
-}
-```
-
-### 4.1 实体命名规范（新增，强制）
-- 实体类统一使用 `UpperCamelCase` 的业务名词，且使用**单数**：`User`、`LoginLog`、`FileModule`。
-- 实体类放在 `domain/` 包，不要混放到 `dto/vo/request` 包。
-- 禁止随意后缀：`Entity/DO/PO/Pojo/Model/Data/Info/New/Tmp/Test`。
-- 实体命名需与表语义对应：`auth_user` → `User`，`file_module` → `FileModule`。
-- 一个表只对应一个主实体名，不允许同义并存（如同时出现 `UserDO` 与 `UserEntity`）。
-
-**正反例**：
-```java
-// ✅ 推荐
-public class User {}
-public class FileModule {}
-
-// ❌ 禁止
-public class UserEntity {}
-public class UserDO {}
-public class FileModuleData {}
-public class NewUserModel {}
-```
-
-### 5. 策略模式
-复杂业务逻辑使用策略模式，参考 `auth-center` 的登录策略实现。
-
----
-
-## 快速开始
-
-### 创建新微服务
-
-**基本步骤**：
-1. 创建模块结构（标准包结构）
-2. 配置 `pom.xml`（依赖 base-basic + Nacos）
-3. 配置 `bootstrap.yml` 和环境配置
-4. 创建 `Application` 主类
-5. 实现业务逻辑
-
-**详细指南**：参考 [references/create-service.md](references/create-service.md)
-
-### 必需依赖
-```xml
-<!-- 基础模块 (必须) -->
-<dependency>
-    <groupId>com.xiwen</groupId>
-    <artifactId>base-basic</artifactId>
-</dependency>
-
-<!-- Spring Boot Web -->
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-web</artifactId>
-</dependency>
-
-<!-- Nacos 服务注册发现 -->
-<dependency>
-    <groupId>com.alibaba.cloud</groupId>
-    <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
-</dependency>
-```
-
----
-
-## 公共模块
-
-| 模块 | 功能 | 何时使用 |
-|------|------|----------|
-| base-basic | 响应封装、异常处理、过滤器 | 所有服务（必须） |
-| base-redis | Redis缓存、分布式锁、Caffeine本地缓存 | 需要缓存或分布式锁时 |
-| base-knife4j | API文档（Swagger增强） - MVC版 | Spring MVC服务需要文档时 |
-| base-knife4j-webflux | API文档（Swagger增强） - WebFlux版 | Spring WebFlux服务需要文档时 |
-| base-feignClients | Feign客户端集合 | 调用其他服务时 |
-| file-feignClient | 文件服务Feign客户端 | 需要文件上传/下载功能时 |
-
-**详细使用指南**：参考 [references/common-modules.md](references/common-modules.md)
-
-### 快速示例
-
-#### 使用响应封装
-```java
-// 成功响应
-return RI.ok(data);
-
-// 失败响应
-return RI.f("错误信息");
-
-// 抛出异常（推荐）
-throw new BizException("业务错误");
-```
-
-#### 使用分布式锁
-```java
-@DistributedLock(key = "'order:' + #userId", waitTime = 3, leaseTime = 10)
-public void createOrder(Long userId, OrderRequest request) {
-    // 业务逻辑
-}
-```
-
-#### 使用缓存
-```java
-// Redis 缓存
-redisTemplate.opsForValue().set(key, user, 30, TimeUnit.MINUTES);
-
-// 本地缓存
-@CacheablePlus(value = "users", key = "#userId", ttl = 300)
-public User getUser(Long userId) {
-    return userMapper.selectById(userId);
-}
-```
-
----
-
-## REST API 实现
-
-### 标准 Controller 结构
-```java
-@Slf4j
-@Tag(name = "业务管理", description = "业务相关接口")
-@RestController
-@RequestMapping("/api/business")
-@RequiredArgsConstructor
-public class BusinessController {
-
-    private final BusinessService businessService;
-
-    @Operation(summary = "查询业务", description = "根据ID查询业务详情")
-    @GetMapping("/{id}")
-    public RI<BusinessDTO> getById(@PathVariable Long id) {
-        log.info("查询业务: id={}", id);
-        return RI.ok(businessService.getById(id));
-    }
-}
-```
-
-### Service 层模式
-```java
-@Slf4j
-@Service
-@RequiredArgsConstructor
-public class BusinessService {
-
-    private final BusinessMapper businessMapper;
-
-    @Transactional(rollbackFor = Exception.class)
-    public BusinessDTO create(BusinessRequest request) {
-        // 业务逻辑
-        Business business = new Business();
-        // ... 设置属性
-        businessMapper.insert(business);
-
-        log.info("业务创建成功: id={}", business.getId());
-        return convertToDTO(business);
-    }
-}
-```
-
-**详细实现模式**：参考 [references/rest-api-patterns.md](references/rest-api-patterns.md)，包含：
-- CRUD 标准实现
-- 参数校验
-- 复杂查询
-- 批量操作
-- 文件上传下载
-- 性能优化
-
----
-
-## Feign 客户端
-
-### 创建 Feign Client
-
-**步骤**：
-1. 在 `base-feignClients/` 下创建独立模块
-2. 定义 DTO 和 Feign 接口
-3. 其他服务添加依赖后使用
-
-**示例结构**：
-```
-base-feignClients/business-feignClient/
-├── src/main/java/com/xiwen/feign/business/
-│   ├── api/BusinessFeignClient.java
-│   └── dto/BusinessDTO.java
-└── pom.xml
-```
-
-**Feign 接口（推荐）**：
-```java
-@FeignClient(name = "business-service", path = "/inner/business")
-public interface BusinessFeignClient {
-
-    @GetMapping("/{id}")
-    BusinessDTO getById(@PathVariable("id") Long id);
-}
-```
-
-**Controller 实现**：
-```java
-@RestController
-@RequestMapping("/inner/business")
-public class BusinessInnerController implements BusinessFeignClient {
-
-    @Override
-    public BusinessDTO getById(@PathVariable Long id) {
-        return businessService.getById(id);
-    }
-}
-```
-
-**详细指南**：参考 [references/common-modules.md](references/common-modules.md)
-
----
-
-## 文件服务集成
-
-### 何时使用文件服务
-- 用户头像上传
-- 商品图片上传
-- 附件管理（订单、报告等）
-- 任何需要存储和管理文件的场景
-
-### 集成步骤
-
-#### 1. 添加依赖
-```xml
-<dependency>
-    <groupId>com.xiwen</groupId>
-    <artifactId>file-feignClient</artifactId>
-</dependency>
-```
-
-#### 2. 注入 FileFeignClient
-```java
-@Service
-@RequiredArgsConstructor
-public class UserService {
-
-    private final FileFeignClient fileFeignClient;
-    private final UserMapper userMapper;
-
-    // 业务逻辑...
-}
-```
-
-#### 3. 常用操作示例
-
-**生成上传凭证**（给前端使用）：
-```java
-@PostMapping("/upload-credential")
-@Operation(summary = "获取头像上传凭证")
-public RI<UploadCredentialDTO> getUploadCredential(@RequestBody UploadCredentialRequest request) {
-    // 1. 设置上传参数
-    request.setBusinessType("avatar");
-    request.setBusinessId("user_" + currentUserId);
-
-    // 2. 调用文件服务获取凭证（自动拆包，直接返回数据）
-    // 失败时会抛出 BizException，由全局异常处理器处理
-    UploadCredentialDTO credential = fileFeignClient.generateUploadCredential("user", request);
-
-    // 3. 返回给前端（前端使用 uploadUrl 直传，成功后保存 fileKey）
-    return RI.ok(credential);
-}
-```
-
-**保存 fileKey 到业务数据**：
-```java
-@PutMapping("/avatar")
-@Operation(summary = "更新用户头像")
-public RI<Void> updateAvatar(@RequestBody UpdateAvatarRequest request) {
-    // 1. 验证文件是否存在（自动拆包，失败时自动抛出 BizException）
-    FileInfoDTO fileInfo = fileFeignClient.getFileInfo("user", request.getFileKey());
-
-    // 2. 更新用户头像 fileKey
-    User user = userMapper.selectById(currentUserId);
-    user.setAvatarFileKey(request.getFileKey());
-    userMapper.updateById(user);
-
-    return RI.ok();
-}
-```
-
-**获取文件下载 URL**：
-```java
-@GetMapping("/{id}/avatar")
-@Operation(summary = "获取用户头像URL")
-public RI<String> getUserAvatar(@PathVariable Long id) {
-    // 1. 查询用户头像 fileKey
-    User user = userMapper.selectById(id);
-    if (user.getAvatarFileKey() == null) {
-        return RI.f("用户未设置头像");
-    }
-
-    // 2. 生成下载 URL（有效期 1 小时，自动拆包）
-    String downloadUrl = fileFeignClient.generateDownloadUrl("user", user.getAvatarFileKey(), 3600);
-
-    return RI.ok(downloadUrl);
-}
-```
-
-**批量获取下载 URL**（性能优化）：
-```java
-@GetMapping("/list")
-@Operation(summary = "查询用户列表（含头像）")
-public RI<List<UserVO>> listUsers() {
-    // 1. 查询用户列表
-    List<User> users = userMapper.selectList(null);
-
-    // 2. 收集所有 fileKey
-    List<Long> fileKeys = users.stream()
-        .map(User::getAvatarFileKey)
-        .filter(Objects::nonNull)
-        .distinct()
-        .collect(Collectors.toList());
-
-    // 3. 批量获取下载 URL（避免 N+1 查询，自动拆包）
-    Map<Long, String> urlMap = fileFeignClient.batchGenerateDownloadUrlsMap("user", fileKeys, 3600);
-
-    // 4. 组装 VO
-    List<UserVO> voList = users.stream().map(user -> {
-        UserVO vo = new UserVO();
-        BeanUtils.copyProperties(user, vo);
-        vo.setAvatarUrl(urlMap.get(user.getAvatarFileKey()));
-        return vo;
-    }).collect(Collectors.toList());
-
-    return RI.ok(voList);
-}
-```
-
-**删除文件**：
-```java
-@DeleteMapping("/avatar")
-@Operation(summary = "删除用户头像")
-public RI<Void> deleteAvatar() {
-    // 1. 查询当前用户
-    User user = userMapper.selectById(currentUserId);
-    if (user.getAvatarFileKey() == null) {
-        return RI.f("用户未设置头像");
-    }
-
-    // 2. 删除文件（同时删除存储和数据库记录，自动拆包）
-    fileFeignClient.deleteFile("user", user.getAvatarFileKey());
-
-    // 3. 清除用户头像 fileKey
-    user.setAvatarFileKey(null);
-    userMapper.updateById(user);
-
-    return RI.ok();
-}
-```
-
-### 最佳实践
-
-#### 1. moduleCode 命名规范
-- 使用业务域名：`user`、`product`、`order`
-- 小写字母，多个单词用短横线连接：`order-refund`
-
-#### 2. businessType 使用约定
-- 明确业务类型：`avatar`（头像）、`image`（图片）、`attachment`（附件）
-- 便于统计和管理不同类型的文件
-
-#### 3. fileKey 存储
-- 使用 Long 类型（雪花 ID）
-- 数据库字段命名：`{业务}_file_key`（如 `avatar_file_key`）
-- 可为空：文件字段通常是可选的
-
-#### 4. 性能优化
-- **批量操作**：使用 `batchGenerateDownloadUrls` 避免 N+1 查询
-- **缓存 URL**：下载 URL 有效期内可缓存（默认 1 小时）
-- **异步处理**：大文件上传完成后的后续处理（如生成缩略图）可异步执行
-
-#### 5. 错误处理
-```java
-// 校验文件是否存在（失败时自动抛 BizException）
-FileInfoDTO fileInfo = fileFeignClient.getFileInfo("user", fileKey);
-
-// 校验文件大小
-if (fileInfo.getFileSize() > 5 * 1024 * 1024) {  // 5MB
-    throw new BizException("文件大小超过限制");
-}
-
-// 校验文件类型
-if (!fileInfo.getMimeType().startsWith("image/")) {
-    throw new BizException("仅支持图片格式");
-}
-```
-
-### 完整流程示例
-
-**场景**：用户上传头像
+示例：
 
 ```java
-// 1. 前端调用：获取上传凭证
-@PostMapping("/api/v1/users/avatar/upload-credential")
-public RI<UploadCredentialDTO> getAvatarUploadCredential(@RequestBody UploadCredentialRequest request) {
-    request.setBusinessType("avatar");
-    request.setBusinessId("user_" + SecurityUtils.getCurrentUserId());
-    return RI.ok(fileFeignClient.generateUploadCredential("user", request));
-}
+@FeignClient(name = "auth-center", path = "/inner/auth")
+public interface InnerAuthFeignClient {
 
-// 2. 前端使用 uploadUrl 直传到存储服务（不经过后端）
-
-// 3. 前端上传成功后，调用保存接口
-@PutMapping("/api/v1/users/avatar")
-public RI<UserVO> updateAvatar(@RequestBody UpdateAvatarRequest request) {
-    // 3.1 验证文件（失败时自动抛 BizException）
-    FileInfoDTO fileInfo = fileFeignClient.getFileInfo("user", request.getFileKey());
-
-    // 3.2 校验文件类型和大小
-    if (!fileInfo.getMimeType().startsWith("image/")) {
-        throw new BizException("仅支持图片格式");
-    }
-    if (fileInfo.getFileSize() > 5 * 1024 * 1024) {
-        throw new BizException("图片大小不能超过5MB");
-    }
-
-    // 3.3 删除旧头像（如果存在）
-    Long userId = SecurityUtils.getCurrentUserId();
-    User user = userMapper.selectById(userId);
-    if (user.getAvatarFileKey() != null) {
-        fileFeignClient.deleteFile("user", user.getAvatarFileKey());
-    }
-
-    // 3.4 更新用户头像
-    user.setAvatarFileKey(request.getFileKey());
-    userMapper.updateById(user);
-
-    // 3.5 返回用户信息（含头像 URL）
-    UserVO vo = convertToVO(user);
-    vo.setAvatarUrl(fileFeignClient.generateDownloadUrl("user", user.getAvatarFileKey(), 3600));
-
-    return RI.ok(vo);
+    @PostMapping("/refresh")
+    TokenResponse refreshToken(@RequestBody RefreshTokenRequest request);
 }
 ```
 
-### 注意事项
-- **fileKey 类型**：使用 `Long`（雪花 ID），不是 String
-- **上传凭证有效期**：默认 1 小时，前端需处理超时重新获取
-- **文件删除**：业务数据删除时，记得同时删除关联的文件
-- **权限控制**：验证当前用户是否有权限操作该文件
-- **前端直传**：不要让文件流经后端，使用预签名 URL 直传到存储服务
+## 权限、租户与审计
 
----
+- 接口权限最终在后端业务服务或授权服务软件开发工具包校验。
+- 数据权限必须在查询和变更时强制执行，不能只靠前端过滤。
+- 菜单和按钮权限只影响展示，不能作为最终授权。
+- 跨租户和跨业务线访问必须服务端校验。
+- 客户端传入的 `tenantId`、`businessLine`、`applicationCode`、`clientType`、`deviceId` 只能作为选择项，不能直接作为授权依据。
+- 登录、登出、令牌刷新失败、密码修改、角色变更、权限变更、租户配置变更、文件下载、数据导出、敏感接口调用、开放接口调用必须考虑审计或审计规划。
 
-## 技术栈
+## 数据库脚本与配置变更
 
-### 核心框架
-- Spring Boot 3.2.0
-- Spring Cloud 2023.0.0
-- Spring Cloud Alibaba 2023.0.0.0-RC1
-- JDK 21
+涉及数据库结构、索引、初始化数据或配置变更时，使用 `文档编辑规范`。
 
-### 数据库
-- MySQL（默认开发与文档主路径）
-- PostgreSQL（兼容数据库）
-- SQLite（兼容数据库）
-- 数据库结构、索引、初始化和迁移脚本必须同时考虑三库兼容
-- MyBatis-Plus 3.5.15
+- 已发布或已执行过的 `V*.sql` 禁止直接修改。
+- 新增下一版本数据库脚本和回滚脚本。
+- 同步说明文档或变更日志。
+- 数据库相关改动需考虑 MySQL、PostgreSQL、SQLite 兼容。
 
-### 缓存与锁
-- Redis (分布式缓存)
-- Redisson 3.32.0 (分布式锁)
-- Caffeine 3.1.8 (本地缓存)
+## 验证命令
 
-### 安全
-- JWT (io.jsonwebtoken 0.12.5)
-- BCrypt (Spring Security Crypto)
+在 `base-module/` 下按改动范围选择最小必要命令：
 
-### 文档
-- Knife4j 4.5.0 (Swagger增强)
-
-### 工具类
-- Hutool 5.8.25
-- Aviator 5.4.3 (表达式引擎)
-
----
-
-## 最佳实践
-
-### 0. 开发禁止项（必须遵守）
-- 不要在 Feign 客户端接口返回 `RI<T>/R<T>`，客户端方法统一返回业务 DTO/VO。
-- 不要把 Entity 直接暴露给 Controller 响应。
-- 不要在 Controller 中编排复杂事务逻辑（下沉到 Service）。
-- 不要在 SQL 中拼接用户输入参数。
-
-### 1. 日志规范
-```java
-// 入口日志
-log.info("用户登录: username={}, businessLine={}, clientType={}", username, businessLine, clientType);
-
-// 错误日志
-log.error("登录失败: username={}, reason={}", username, e.getMessage(), e);
+```bash
+mvn -pl server/auth-center -am test -Drevision=1.0
+mvn -pl server/admin -am test -Drevision=1.0
+mvn -pl server/api-gateway -am test -Drevision=1.0
+mvn -pl common/base-basic -am test -Drevision=1.0
 ```
 
-### 2. 参数校验
-```java
-@NotNull(message = "用户名不能为空")
-@Size(min = 3, max = 20, message = "用户名长度3-20")
-private String username;
-```
+## 完成前检查
 
-### 3. 事务管理
-```java
-@Transactional(rollbackFor = Exception.class)
-public void updateUser(User user) {
-    // 数据库操作
-}
-```
-
-### 4. 性能优化
-- L1 缓存：Caffeine（本地缓存）
-- L2 缓存：Redis（分布式缓存）
-- 分页查询：使用 MyBatis-Plus Page
-- 避免 N+1 查询
-
-### 5. 提交前自检清单
-- [ ] Feign 客户端返回类型为 DTO/VO，而非 `RI/R`
-- [ ] Controller 响应不直接返回 Entity
-- [ ] 新增实体类命名符合规范（单数业务名词、无随意后缀）
-- [ ] 异常走 `BizException` + 全局异常处理器
-- [ ] 关键路径有日志（至少包含关键业务主键）
-- [ ] 至少执行：`mvn -pl <module> test`（或等效测试）
-
----
-
-## 参考资源
-
-- **[公共模块使用指南](references/common-modules.md)** - base-basic、base-redis、base-knife4j、base-feignClients 详细使用
-- **[REST API 实现模式](references/rest-api-patterns.md)** - CRUD、参数校验、异常处理、批量操作、文件处理
-- **[创建新微服务指南](references/create-service.md)** - 详细的服务创建步骤、配置、常见问题
-- **项目规范** - 使用 `project-conventions` skill 查看架构原则和编码标准
-- **示例代码** - 参考 `server/auth-center/`、`server/im-service/`（WebFlux）和 `server/examples/` 目录
+- [ ] 已确认所属独立仓库是 `base-module`。
+- [ ] 已读取目标模块现有实现。
+- [ ] 没有让网关承担复杂业务权限。
+- [ ] 没有让前端承担最终权限裁决。
+- [ ] 对外响应仍为 `code`、`msg`、`data`、`traceId`。
+- [ ] 声明式服务调用返回业务数据传输对象或视图对象，不返回响应包装体。
+- [ ] 请求对象、数据传输对象、视图对象、实体分层正确。
+- [ ] 涉及租户、业务线、应用、客户端时已做服务端可信校验。
+- [ ] 涉及敏感操作时已考虑审计。
+- [ ] 已运行必要 Maven 验证命令，或记录未执行原因。
