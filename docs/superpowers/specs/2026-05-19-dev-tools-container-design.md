@@ -15,6 +15,7 @@
 - 使用 SDKMAN 管理 Java 与 Maven，预装 JDK 8、11、17、21 和 Maven 3.6.x。
 - 使用 nvm 管理 Node，预装 Node 22、18、16、14。
 - 构建时安装 `kubectl`、`kt-connect/ktctl`、`git`、Claude Code CLI、Codex CLI、Gemini CLI，做到镜像构建完成后可直接使用。
+- 默认预置 Claude Code 可用的技能资源：superpowers 技能集和 Claude 官方 skills 仓库内容。
 - Maven 依赖缓存与宿主机共享；Maven `settings.xml` 使用专用配置目录映射。
 - AI CLI 与 Kubernetes 配置默认使用专用隔离目录，可通过开关复用宿主机默认配置。
 
@@ -157,6 +158,30 @@ GEMINI_CLI_VERSION
 
 默认值可以是 `latest` 或实施时确认的一组明确版本。AI CLI 的包名和安装命令以官方当前可用方式为准。
 
+### Claude Code 技能资源
+
+镜像默认预置 Claude Code 可用的技能资源：
+
+```text
+superpowers 技能集 / 插件：https://claude.com/plugins/superpowers
+Claude 官方 skills 仓库：https://github.com/anthropics/skills
+```
+
+技能资源不只保存在镜像层，也通过运行脚本映射到宿主机专用目录，便于后续升级、查看和复用：
+
+```text
+宿主机 ~/.dev-tools-container/claude-skills -> 容器 /opt/claude-skills
+```
+
+容器内默认目录：
+
+```text
+/opt/claude-skills/superpowers-plugin-url.txt
+/opt/claude-skills/anthropic-skills
+```
+
+实施时需要确认 Claude Code CLI 当前支持的技能安装目录或导入方式，并把这些技能放到 Claude Code CLI 实际可发现的位置；如果 CLI 不支持构建期全局启用，则至少把资源同步到 `/opt/claude-skills`，并在 README 中写明启用方式。镜像内不写入任何用户级登录态。
+
 ## 运行脚本设计
 
 `run-dev-tools.sh` 负责封装 `docker run` 参数，支持两种模式。
@@ -248,6 +273,7 @@ Maven `settings.xml` 使用专用配置目录作为宿主机来源：
 宿主机 ~/.dev-tools-container/claude -> 容器 /home/dev/.claude
 宿主机 ~/.dev-tools-container/codex  -> 容器 /home/dev/.codex
 宿主机 ~/.dev-tools-container/gemini -> 容器 /home/dev/.gemini
+宿主机 ~/.dev-tools-container/claude-skills -> 容器 /opt/claude-skills
 ```
 
 如需复用宿主机默认配置，使用：
