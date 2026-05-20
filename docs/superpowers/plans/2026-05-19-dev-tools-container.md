@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 在 `fn-devops/dockerfiles` 中新增一个可构建、可运行的 Ubuntu 24.04 开发工具容器，内置常用 Linux 命令、SDKMAN、nvm、JDK 8/11/17/21、Maven 3.6.3、Node 22/18/16/14、kubectl、kt-connect、Claude Code CLI、Codex CLI、Gemini CLI，并默认预置 superpowers 技能集和 Claude 官方 skills 仓库资源，通过脚本统一挂载工作区和配置目录。
+**Goal:** 在 `fn-devops/dockerfiles` 中新增一个可构建、可运行的 Ubuntu 24.04 开发工具容器，内置常用 Linux 命令、SDKMAN、nvm、JDK 8/11/17/21、Maven 3.6.3、Python 3/pip/venv/pipx、Node 22/18/16/14、kubectl、kt-connect、Claude Code CLI、Codex CLI、Gemini CLI，并默认预置 superpowers 技能集和 Claude 官方 skills 仓库资源，通过脚本统一挂载工作区和配置目录。
 
 **Architecture:** 新增 `fn-devops/dockerfiles/dev-tools/` 作为独立镜像构建上下文，保持与现有 Docker 镜像目录一致。`Dockerfile` 负责安装工具和配置非 root 用户，`entrypoint.sh` 负责登录 shell 环境初始化，`run-dev-tools.sh` 负责封装 `docker run` 的挂载与交互/一次性命令模式，`README.md` 记录构建、运行和配置策略。
 
-**Tech Stack:** Docker、Ubuntu 24.04、Bash、SDKMAN、nvm、Maven 3.6.3、Node.js、kubectl、kt-connect、npm 全局 CLI。
+**Tech Stack:** Docker、Ubuntu 24.04、Bash、SDKMAN、nvm、Maven 3.6.3、Python 3、pip、venv、pipx、Node.js、kubectl、kt-connect、npm 全局 CLI。
 
 ---
 
@@ -14,7 +14,7 @@
 
 - Create: `fn-devops/dockerfiles/dev-tools/Dockerfile`
   - 构建 Ubuntu 24.04 开发工具镜像。
-  - 安装系统工具、SDKMAN、nvm、Java、Maven、Node、kubectl、kt-connect、AI CLI。
+  - 安装系统工具、SDKMAN、nvm、Java、Maven、Python、Node、kubectl、kt-connect、AI CLI。
   - 预置 superpowers 插件资源和 Claude 官方 skills 仓库资源。
   - 创建非 root 用户 `dev`，默认工作目录 `/workspace`。
 - Create: `fn-devops/dockerfiles/dev-tools/entrypoint.sh`
@@ -217,6 +217,10 @@ RUN apt-get update \
         netcat-openbsd \
         openssh-client \
         procps \
+        python3 \
+        python3-pip \
+        python3-venv \
+        pipx \
         rsync \
         sudo \
         tar \
@@ -314,6 +318,9 @@ required = [
     'ARG MAVEN_VERSION=3.6.3',
     'ARG KUBECTL_VERSION=v1.30.0',
     'ARG KT_CONNECT_VERSION=0.3.7',
+    'python3-pip',
+    'python3-venv',
+    'pipx',
     'ARG SUPERPOWERS_PLUGIN_URL=https://claude.com/plugins/superpowers',
     'ARG CLAUDE_SKILLS_REPO=https://github.com/anthropics/skills.git',
     'git clone --depth 1 "${CLAUDE_SKILLS_REPO}" /opt/claude-skills/anthropic-skills',
@@ -563,7 +570,7 @@ Create `fn-devops/dockerfiles/dev-tools/README.md` with this complete content:
 ```markdown
 # dev-tools
 
-`dev-tools` 是基于 Ubuntu 24.04 的开发工具镜像，内置常用 Linux 命令、Git、SDKMAN、nvm、JDK 8/11/17/21、Maven 3.6.3、Node 22/18/16/14、kubectl、kt-connect、Claude Code CLI、Codex CLI、Gemini CLI。
+`dev-tools` 是基于 Ubuntu 24.04 的开发工具镜像，内置常用 Linux 命令、Git、SDKMAN、nvm、JDK 8/11/17/21、Maven 3.6.3、Python 3/pip/venv/pipx、Node 22/18/16/14、kubectl、kt-connect、Claude Code CLI、Codex CLI、Gemini CLI。
 
 ## 构建
 
@@ -728,6 +735,9 @@ nvm use 14
 ./run-dev-tools.sh git --version
 ./run-dev-tools.sh java -version
 ./run-dev-tools.sh mvn -v
+./run-dev-tools.sh python3 --version
+./run-dev-tools.sh pip3 --version
+./run-dev-tools.sh pipx --version
 ./run-dev-tools.sh node -v
 ./run-dev-tools.sh kubectl version --client
 ./run-dev-tools.sh ktctl version
@@ -850,7 +860,17 @@ docker run --rm dev-tools:ubuntu24.04 bash -lc 'source ~/.nvm/nvm.sh && nvm --ve
 
 Expected: nvm version prints, all four Node major versions are listed, and `node -v` starts with `v22.`.
 
-- [ ] **Step 6: Verify Kubernetes tools**
+- [ ] **Step 6: Verify Python tools**
+
+Run:
+
+```bash
+docker run --rm dev-tools:ubuntu24.04 python3 --version && docker run --rm dev-tools:ubuntu24.04 pip3 --version && docker run --rm dev-tools:ubuntu24.04 pipx --version
+```
+
+Expected: Python 3, pip, and pipx version information prints.
+
+- [ ] **Step 7: Verify Kubernetes tools**
 
 Run:
 
@@ -860,7 +880,7 @@ docker run --rm dev-tools:ubuntu24.04 kubectl version --client=true && docker ru
 
 Expected: kubectl client version prints and ktctl version prints. If `ktctl version` exits non-zero but `ktctl -h` works, update README verification command to use `ktctl version || ktctl -h` and continue.
 
-- [ ] **Step 7: Verify AI CLIs**
+- [ ] **Step 8: Verify AI CLIs**
 
 Run:
 
@@ -870,7 +890,7 @@ docker run --rm dev-tools:ubuntu24.04 claude --version && docker run --rm dev-to
 
 Expected: all three commands print version information. If an npm package name is wrong, replace only that package name in `Dockerfile`, update README, rebuild, and rerun this step.
 
-- [ ] **Step 8: Verify wrapper script with temporary workspace**
+- [ ] **Step 9: Verify wrapper script with temporary workspace**
 
 Run:
 
@@ -884,7 +904,7 @@ Expected output:
 /workspace
 ```
 
-- [ ] **Step 9: Verify Maven settings mapping**
+- [ ] **Step 10: Verify Maven settings mapping**
 
 Run:
 
@@ -913,9 +933,9 @@ Expected output includes:
 dev-tools-marker
 ```
 
-- [ ] **Step 10: Commit any build-fix changes**
+- [ ] **Step 11: Commit any build-fix changes**
 
-If Tasks 6.1 through 6.9 required edits, run:
+If Tasks 6.1 through 6.10 required edits, run:
 
 ```bash
 cd /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles && git status --short && git add image-config.json dev-tools/Dockerfile dev-tools/entrypoint.sh dev-tools/run-dev-tools.sh dev-tools/README.md && git commit -m "fix(dev-tools): align tool installation and verification"
@@ -984,6 +1004,6 @@ Only report an item as passed after the command in its corresponding step has ac
 
 ## Self-Review
 
-- Spec coverage: 计划覆盖了新增镜像目录、接入 `image-config.json`、Ubuntu 24.04、系统工具、SDKMAN/nvm、多版本 JDK/Node、Maven 3.6.3、kubectl、kt-connect、AI CLI、运行脚本、挂载策略、Maven settings 专用目录、AI/Kubernetes 配置隔离与可选宿主配置复用、安全边界和验证标准。
+- Spec coverage: 计划覆盖了新增镜像目录、接入 `image-config.json`、Ubuntu 24.04、系统工具、SDKMAN/nvm、多版本 JDK/Node、Maven 3.6.3、Python 3/pip/venv/pipx、kubectl、kt-connect、AI CLI、运行脚本、挂载策略、Maven settings 专用目录、AI/Kubernetes 配置隔离与可选宿主配置复用、skills 资源预置与映射、安全边界和验证标准。
 - Placeholder scan: 本计划没有使用 TBD、TODO、implement later、similar to previous 等占位表述。
 - Consistency check: 文件路径、镜像名、默认 tag、用户 `dev`、工作区 `/workspace`、Maven settings 映射、AI/Kubernetes 开关名称在各任务中保持一致。

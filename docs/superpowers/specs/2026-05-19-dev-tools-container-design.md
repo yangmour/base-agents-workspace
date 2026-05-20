@@ -13,6 +13,7 @@
 - 支持交互式进入容器和一次性执行命令。
 - 默认映射宿主机 `/workspace` 到容器 `/workspace`，并允许后续通过变量调整。
 - 使用 SDKMAN 管理 Java 与 Maven，预装 JDK 8、11、17、21 和 Maven 3.6.x。
+- 预装 Python 运行环境，包括 Python 3、pip、venv、pipx，支持后续安装 Python CLI 工具。
 - 使用 nvm 管理 Node，预装 Node 22、18、16、14。
 - 构建时安装 `kubectl`、`kt-connect/ktctl`、`git`、Claude Code CLI、Codex CLI、Gemini CLI，做到镜像构建完成后可直接使用。
 - 默认预置 Claude Code 可用的技能资源：superpowers 技能集和 Claude 官方 skills 仓库内容。
@@ -102,6 +103,21 @@ Maven 3.6.3
 ```
 
 JDK 具体发行版以 SDKMAN 在构建时可安装的候选版本为准，实施时固定明确版本，避免构建不可复现。
+
+### Node
+
+### Python
+
+安装 Ubuntu 24.04 默认 Python 3 运行环境：
+
+```text
+python3
+python3-pip
+python3-venv
+pipx
+```
+
+Python 用于运行常见脚本、安装 Python CLI 工具，以及辅助验证构建配置。默认不在镜像内预装项目级 Python 依赖。
 
 ### Node
 
@@ -363,6 +379,9 @@ bash -lc 'source ~/.sdkman/bin/sdkman-init.sh && sdk version'
 bash -lc 'source ~/.nvm/nvm.sh && nvm --version'
 java -version
 mvn -v
+python3 --version
+pip3 --version
+pipx --version
 node -v
 kubectl version --client
 ktctl version || ktctl -h
@@ -375,6 +394,8 @@ gemini --version
 
 ```bash
 ./run-dev-tools.sh mvn -v
+./run-dev-tools.sh python3 --version
+./run-dev-tools.sh pipx --version
 ./run-dev-tools.sh node -v
 ./run-dev-tools.sh kubectl version --client
 ```
