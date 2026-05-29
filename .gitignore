@@ -1,5 +1,5 @@
 # 子项目各自有 Git 仓库，这里忽略
-base-module/
+jav-base-module/
 node-base-module/
 base-agents-workspace/
 fn-devops/
