@@ -149,9 +149,6 @@ docs/
 - **涉及表/字段：** `users.username` `users.email` `users.status`
 - **状态：** 已上线
 
-### ~~功能：微信登录~~
-
-> ~~废弃于 v0.3.0，原因：接入成本高，优先级降低。~~
 ```
 
 ## 五、变更日志规范：`docs/changelog.md`

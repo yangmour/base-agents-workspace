@@ -153,7 +153,3 @@ npm run preview
 - 菜单与权限相关改动应保持后端作为权限真值源。前端权限判断只用于体验和页面展示，不能替代后端鉴权。
 - RBAC 与 ABAC 是串联关系：登录态校验、RBAC 角色/权限判断、资源上下文装配、ABAC 表达式裁决。
 - 权限画像和缓存改动要保留 ABAC 上下文字段，例如 `businessLine`、`moduleCode`、`channel`、`userType`、`tenantId`、`attributes`；只缓存 roles/permissions 不够。
-
-## 已检查的规则文件
-
-创建本文件时，仓库根目录未发现 `.cursorrules`、`.cursor/rules/` 或 `.github/copilot-instructions.md`。
