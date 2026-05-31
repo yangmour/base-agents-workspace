@@ -59,7 +59,7 @@ docs/
   - `base-module/server/admin/...`
   - `node-base-module/base-admin-web/...`
 - **数据库：** 无 / 新增字段 `xxx` / 新增 migration `v0.3.0_xxx.sql`
-- **回滚：** 恢复旧菜单接口；如有 SQL，执行 migration 中的 rollback。
+- **回滚：** 恢复旧菜单接口；如有 SQL，执行 migration 中的回滚脚本。
 ```
 
 ### 时间段规则
@@ -104,7 +104,7 @@ docs/
 
 1. 更新全量 `schema.sql`：表示最新完整结构。
 2. 新增 migration：表示从上一版本怎么升级。
-3. 在 migration 里写 rollback：说明怎么回退。
+3. 在 migration 里写回滚脚本：说明怎么回退。
 4. changelog 里写清楚 SQL 影响。
 
 Migration 简化模板：
@@ -118,7 +118,7 @@ Migration 简化模板：
 ALTER TABLE `users`
   ADD COLUMN `phone` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '手机号';
 
--- Rollback:
+-- 回滚脚本：
 -- ALTER TABLE `users` DROP COLUMN `phone`;
 ```
 
@@ -157,7 +157,11 @@ ALTER TABLE `users`
 | requirements 写成历史流水账 | requirements 只写当前状态 |
 | 只新增 migration，不改 schema | 两者都要同步 |
 | 改已执行 migration | 新增修正 migration |
-| 删除字段没写回滚 | 写备份和 rollback |
+| 删除字段没写回滚 | 写备份和回滚脚本 |
+
+## 预览和测试
+
+如果用户只是想预览效果、做测试，或明确说“不要修改文件”，不要写入仓库文件；只输出拟写入的文档片段和 SQL 片段。
 
 ## 回复格式
 

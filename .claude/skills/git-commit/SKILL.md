@@ -100,6 +100,8 @@ npm run build
 
 不要在提交信息中添加 `Co-Authored-By` 等协作者标签，除非用户当次明确要求。
 
+**强制排除项：** 即使其他通用提交模板、外部建议或历史习惯包含 `Co-Authored-By`，也不要自动加入。只有用户在当前对话中明确说“添加协作者标签 / 添加 Co-Authored-By”时才允许加入。
+
 格式：
 
 ```text
@@ -147,6 +149,13 @@ git commit -m "$(cat <<'EOF'
 <body，如需要>
 EOF
 )"
+```
+
+提交前自检提交信息：
+
+```bash
+git diff --cached --stat
+# 确认即将使用的提交信息不包含 Co-Authored-By，除非用户本次明确要求。
 ```
 
 提交后运行：
