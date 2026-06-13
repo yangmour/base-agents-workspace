@@ -227,3 +227,22 @@ npm test
 - 菜单与权限相关改动应保持后端作为权限真值源。前端权限判断只用于体验和页面展示，不能替代后端鉴权。
 - RBAC 与 ABAC 是串联关系：登录态校验、RBAC 角色/权限判断、资源上下文装配、ABAC 表达式裁决。
 - 权限画像和缓存改动要保留 ABAC 上下文字段，例如 `businessLine`、`moduleCode`、`channel`、`userType`、`tenantId`、`attributes`；只缓存 roles/permissions 不够。
+
+## 命名规范（强制）
+
+新增代码必须遵循，详见 `java-base-module/docs/项目架构评价与修改计划.md#十命名规范`。
+
+| 类别 | 约定 |
+|------|------|
+| 实体包 | 统一 `domain`，不用 `model`/`entity` |
+| 实体类 | `{Name}`，全部继承 `BaseEntity` |
+| DTO | `{Name}DTO`，放 `dto/` 包 |
+| VO | `{Name}VO`，放 `vo/` 包 |
+| Request | `{Action}Request`，放 `request/` 包 |
+| Service | `{Name}Service` + `{Name}ServiceImpl` |
+| Mapper | `{Entity}Mapper` |
+| Feign | `Inner{Resource}Client` 或 `{Module}FeignClient` |
+| URL | 内部 `/inner/{module}/{resource}`，管理 `/api/admin/{module}/{resource}` |
+| 注入 | `@RequiredArgsConstructor`，不用 `@Autowired` |
+| 响应 | 不用 `Response` 后缀，用 `DTO` 或 `VO` |
+| 跨域 | 不直接注入对方 Mapper，走 Feign 接口 |
