@@ -4,60 +4,60 @@
 
 **Goal:** 将 P0 架构文档从“评审中/草案”收敛为可执行、可提交、可作为后续代码重构依据的冻结基线。
 
-**Architecture:** 本计划只处理文档基线，不修改 Java/Vue 代码，不修改数据库脚本。以 `base-module/docs/架构设计/P0-架构决策与代码重构任务清单.md` 为阶段入口，统一索引、现状盘点、差距矩阵、ADR、顶层总纲和 P0 状态口径。
+**Architecture:** 本计划只处理文档基线，不修改 Java/Vue 代码，不修改数据库脚本。以 `java-base-module/docs/架构设计/P0-架构决策与代码重构任务清单.md` 为阶段入口，统一索引、现状盘点、差距矩阵、ADR、顶层总纲和 P0 状态口径。
 
-**Tech Stack:** Markdown、Git、现有 `base-module/docs/架构设计` 文档体系、项目根 `docs/superpowers` 计划与设计文档目录。
+**Tech Stack:** Markdown、Git、现有 `java-base-module/docs/架构设计` 文档体系、项目根 `docs/superpowers` 计划与设计文档目录。
 
 ---
 
 ## File Structure
 
-- Modify: `base-module/docs/架构设计/README.md`
-  - 将文档状态从“评审中”改为“P0 基线已冻结”。
-  - 将 P0、00、GAP、ADR 状态改为“P0 基线”。
-  - 将 01-07 状态改为“目标设计基线”，表示它们是目标方向，不等同于当前实现。
-  - 补充“废弃规则与变更控制”，明确坏设计可废弃，但必须有依据、替代和验证。
+- Modify: `java-base-module/docs/架构设计/README.md`
+  - 将文档状态从”评审中”改为”P0 基线已冻结”。
+  - 将 P0、00、GAP、ADR 状态改为”P0 基线”。
+  - 将 01-07 状态改为”目标设计基线”，表示它们是目标方向，不等同于当前实现。
+  - 补充”废弃规则与变更控制”，明确坏设计可废弃，但必须有依据、替代和验证。
 
-- Modify: `base-module/docs/架构设计/P0-架构决策与代码重构任务清单.md`
-  - 将文档状态改为“P0 基线已冻结”。
+- Modify: `java-base-module/docs/架构设计/P0-架构决策与代码重构任务清单.md`
+  - 将文档状态改为”P0 基线已冻结”。
   - 将 P0-1 状态更新为已完成、架构审计通过。
   - 增加 P0 执行分组，与已确认的 B 方案保持一致。
   - 增加主题化提交边界，明确每个 P0 主题完成后提交一次。
   - 追加 P0-1 状态记录。
 
-- Modify: `base-module/docs/架构设计/00-当前架构现状盘点.md`
-  - 将状态改为“P0 基线已冻结”。
+- Modify: `java-base-module/docs/架构设计/00-当前架构现状盘点.md`
+  - 将状态改为”P0 基线已冻结”。
   - 增加基线冻结说明，强调该文档只记录事实，不记录未来愿景。
   - 增加变更记录。
 
-- Modify: `base-module/docs/架构设计/目标与现状差距矩阵.md`
-  - 将状态改为“P0 基线已冻结”。
+- Modify: `java-base-module/docs/架构设计/目标与现状差距矩阵.md`
+  - 将状态改为”P0 基线已冻结”。
   - 增加 B 方案主题映射，说明差距矩阵如何驱动后续主题化代码重构。
   - 增加变更记录。
 
-- Modify: `base-module/docs/架构设计/ADR/README.md`
-  - 将 ADR 索引状态改为“P0 基线已冻结”。
+- Modify: `java-base-module/docs/架构设计/ADR/README.md`
+  - 将 ADR 索引状态改为”P0 基线已冻结”。
   - 增加 ADR 变更规则：新增替代 ADR，不静默覆盖已冻结决策。
 
-- Modify: `base-module/docs/架构设计/ADR/ADR-001-admin-businessline.md`
-  - 确认状态为“已采纳”。
+- Modify: `java-base-module/docs/架构设计/ADR/ADR-001-admin-businessline.md`
+  - 确认状态为”已采纳”。
   - 补充废弃旧口径：`ADMIN` 不再作为新增设计中的 `BusinessLine`。
 
-- Modify: `base-module/docs/架构设计/ADR/ADR-002-token-refresh-owned-by-iam.md`
-  - 确认状态为“已采纳”。
+- Modify: `java-base-module/docs/架构设计/ADR/ADR-002-token-refresh-owned-by-iam.md`
+  - 确认状态为”已采纳”。
   - 补充废弃旧口径：`/api/admin/token/refresh` 不作为长期目标口径。
 
-- Modify: `base-module/docs/架构设计/ADR/ADR-003-menu-route-contract-menutreevo.md`
-  - 确认状态为“已采纳”。
+- Modify: `java-base-module/docs/架构设计/ADR/ADR-003-menu-route-contract-menutreevo.md`
+  - 确认状态为”已采纳”。
   - 补充废弃并行菜单/路由模型，目标统一到 `MenuTreeVO` 兼容结构。
 
-- Modify: `base-module/docs/架构设计/ADR/ADR-004-backend-default-deny.md`
-  - 确认状态为“已采纳”。
-  - 补充废弃“只靠前端隐藏按钮控制权限”的设计。
+- Modify: `java-base-module/docs/架构设计/ADR/ADR-004-backend-default-deny.md`
+  - 确认状态为”已采纳”。
+  - 补充废弃”只靠前端隐藏按钮控制权限”的设计。
 
-- Modify: `base-module/docs/项目架构评价与修改计划.md`
-  - 将顶层文档状态调整为“P0 基线已冻结”。
-  - 增加“P0 基线冻结说明”，明确总纲不替代专项设计、现状盘点、差距矩阵和 ADR。
+- Modify: `java-base-module/docs/项目架构评价与修改计划.md`
+  - 将顶层文档状态调整为”P0 基线已冻结”。
+  - 增加”P0 基线冻结说明”，明确总纲不替代专项设计、现状盘点、差距矩阵和 ADR。
 
 - Create: none
   - 本主题不新建业务代码、不新建 SQL、不新建服务模块。
@@ -67,7 +67,7 @@
 ### Task 1: 冻结架构设计文档索引
 
 **Files:**
-- Modify: `base-module/docs/架构设计/README.md:5-61`
+- Modify: `java-base-module/docs/架构设计/README.md:5-61`
 
 - [ ] **Step 1: Update document status and directory status**
 
@@ -118,7 +118,7 @@ P0 之后允许废弃不合理设计和代码，但必须满足：
 Run:
 
 ```bash
-grep -E "P0 基线已冻结|目标设计基线|废弃规则与变更控制" "base-module/docs/架构设计/README.md"
+grep -E "P0 基线已冻结|目标设计基线|废弃规则与变更控制" "java-base-module/docs/架构设计/README.md"
 ```
 
 Expected: output contains all three phrases.
@@ -128,7 +128,7 @@ Expected: output contains all three phrases.
 ### Task 2: 冻结 P0 任务清单状态和主题提交边界
 
 **Files:**
-- Modify: `base-module/docs/架构设计/P0-架构决策与代码重构任务清单.md:3-124`
+- Modify: `java-base-module/docs/架构设计/P0-架构决策与代码重构任务清单.md:3-124`
 
 - [ ] **Step 1: Update P0 document status**
 
@@ -186,7 +186,7 @@ Add this row after the existing 2026-05-12 P0-1 status row:
 Run:
 
 ```bash
-grep -E "P0 基线已冻结|P0 主题化执行与提交边界|docs\(docs\): 收敛 P0 架构基线|已冻结 P0 文档基线" "base-module/docs/架构设计/P0-架构决策与代码重构任务清单.md"
+grep -E "P0 基线已冻结|P0 主题化执行与提交边界|docs\(docs\): 收敛 P0 架构基线|已冻结 P0 文档基线" "java-base-module/docs/架构设计/P0-架构决策与代码重构任务清单.md"
 ```
 
 Expected: output contains all four phrases.
@@ -196,7 +196,7 @@ Expected: output contains all four phrases.
 ### Task 3: 冻结当前实现盘点文档
 
 **Files:**
-- Modify: `base-module/docs/架构设计/00-当前架构现状盘点.md`
+- Modify: `java-base-module/docs/架构设计/00-当前架构现状盘点.md`
 
 - [ ] **Step 1: Update document status**
 
@@ -237,7 +237,7 @@ In the existing “变更记录” table, add this row after the header row:
 Run:
 
 ```bash
-grep -E "P0 基线已冻结|基线冻结说明|当前实现事实优先级" "base-module/docs/架构设计/00-当前架构现状盘点.md"
+grep -E "P0 基线已冻结|基线冻结说明|当前实现事实优先级" "java-base-module/docs/架构设计/00-当前架构现状盘点.md"
 ```
 
 Expected: output contains all three phrases.
@@ -247,7 +247,7 @@ Expected: output contains all three phrases.
 ### Task 4: 冻结目标与现状差距矩阵
 
 **Files:**
-- Modify: `base-module/docs/架构设计/目标与现状差距矩阵.md:3-80`
+- Modify: `java-base-module/docs/架构设计/目标与现状差距矩阵.md:3-80`
 
 - [ ] **Step 1: Update document status**
 
@@ -305,7 +305,7 @@ In the “变更记录” table, add this row after the header row:
 Run:
 
 ```bash
-grep -E "P0 基线已冻结|P0 主题映射|每完成一个 P0 主题提交一次|冻结目标与现状差距矩阵" "base-module/docs/架构设计/目标与现状差距矩阵.md"
+grep -E “P0 基线已冻结|P0 主题映射|每完成一个 P0 主题提交一次|冻结目标与现状差距矩阵” “java-base-module/docs/架构设计/目标与现状差距矩阵.md”
 ```
 
 Expected: output contains all four phrases.
@@ -416,7 +416,7 @@ Append this section if not already present:
 Run:
 
 ```bash
-grep -R -E "P0 基线已冻结|已冻结 ADR 变更规则|废弃口径|状态：已采纳" "base-module/docs/架构设计/ADR"
+grep -R -E "P0 基线已冻结|已冻结 ADR 变更规则|废弃口径|状态：已采纳" "java-base-module/docs/架构设计/ADR"
 ```
 
 Expected: output includes README and ADR-001 through ADR-004.
@@ -465,7 +465,7 @@ Insert this section after the initial metadata block and before “## 一、文�
 Run:
 
 ```bash
-grep -E "P0 基线已冻结|P0 基线冻结说明|不合理设计可以废弃" "base-module/docs/项目架构评价与修改计划.md"
+grep -E "P0 基线已冻结|P0 基线冻结说明|不合理设计可以废弃" "java-base-module/docs/项目架构评价与修改计划.md"
 ```
 
 Expected: output contains all three phrases.
@@ -484,7 +484,7 @@ Expected: output contains all three phrases.
 Run:
 
 ```bash
-grep -R "P0 基线已冻结" "base-module/docs/架构设计" "base-module/docs/项目架构评价与修改计划.md"
+grep -R "P0 基线已冻结" "java-base-module/docs/架构设计" "java-base-module/docs/项目架构评价与修改计划.md"
 ```
 
 Expected: output includes README, P0 task list, current-state inventory, gap matrix, ADR README, and top-level plan.
@@ -494,7 +494,7 @@ Expected: output includes README, P0 task list, current-state inventory, gap mat
 Run:
 
 ```bash
-grep -R "/api/admin/token/refresh" "base-module/docs/架构设计" "base-module/docs/项目架构评价与修改计划.md"
+grep -R "/api/admin/token/refresh" "java-base-module/docs/架构设计" "java-base-module/docs/项目架构评价与修改计划.md"
 ```
 
 Expected: if output exists, every occurrence must describe an old口径、过渡口径、废弃口径, or a non-target historical note. No occurrence may present `/api/admin/token/refresh` as the new long-term target.
@@ -504,7 +504,7 @@ Expected: if output exists, every occurrence must describe an old口径、过渡
 Run:
 
 ```bash
-grep -R "BusinessLine.*ADMIN\|ADMIN.*BusinessLine\|ADMIN.*业务线" "base-module/docs/架构设计" "base-module/docs/项目架构评价与修改计划.md"
+grep -R "BusinessLine.*ADMIN\|ADMIN.*BusinessLine\|ADMIN.*业务线" "java-base-module/docs/架构设计" "java-base-module/docs/项目架构评价与修改计划.md"
 ```
 
 Expected: if output exists, every occurrence must state that `ADMIN` is deprecated/not used as a new `BusinessLine`, or is a historical/current-state note.
@@ -517,7 +517,7 @@ Run:
 git diff --stat
 ```
 
-Expected: output only includes `.md` files under `base-module/docs/` and this plan file under `docs/superpowers/plans/`.
+Expected: output only includes `.md` files under `java-base-module/docs/` and this plan file under `docs/superpowers/plans/`.
 
 - [ ] **Step 5: Commit P0 document baseline**
 
@@ -525,18 +525,18 @@ Run:
 
 ```bash
 git status --short
-git diff -- "base-module/docs" "docs/superpowers/plans/2026-05-13-p0-doc-baseline-freeze-plan.md"
+git diff -- "java-base-module/docs" "docs/superpowers/plans/2026-05-13-p0-doc-baseline-freeze-plan.md"
 git add \
-  "base-module/docs/架构设计/README.md" \
-  "base-module/docs/架构设计/P0-架构决策与代码重构任务清单.md" \
-  "base-module/docs/架构设计/00-当前架构现状盘点.md" \
-  "base-module/docs/架构设计/目标与现状差距矩阵.md" \
-  "base-module/docs/架构设计/ADR/README.md" \
-  "base-module/docs/架构设计/ADR/ADR-001-admin-businessline.md" \
-  "base-module/docs/架构设计/ADR/ADR-002-token-refresh-owned-by-iam.md" \
-  "base-module/docs/架构设计/ADR/ADR-003-menu-route-contract-menutreevo.md" \
-  "base-module/docs/架构设计/ADR/ADR-004-backend-default-deny.md" \
-  "base-module/docs/项目架构评价与修改计划.md" \
+  "java-base-module/docs/架构设计/README.md" \
+  "java-base-module/docs/架构设计/P0-架构决策与代码重构任务清单.md" \
+  "java-base-module/docs/架构设计/00-当前架构现状盘点.md" \
+  "java-base-module/docs/架构设计/目标与现状差距矩阵.md" \
+  "java-base-module/docs/架构设计/ADR/README.md" \
+  "java-base-module/docs/架构设计/ADR/ADR-001-admin-businessline.md" \
+  "java-base-module/docs/架构设计/ADR/ADR-002-token-refresh-owned-by-iam.md" \
+  "java-base-module/docs/架构设计/ADR/ADR-003-menu-route-contract-menutreevo.md" \
+  "java-base-module/docs/架构设计/ADR/ADR-004-backend-default-deny.md" \
+  "java-base-module/docs/项目架构评价与修改计划.md" \
   "docs/superpowers/plans/2026-05-13-p0-doc-baseline-freeze-plan.md"
 git commit -m "$(cat <<'EOF'
 docs(docs): 收敛 P0 架构基线
