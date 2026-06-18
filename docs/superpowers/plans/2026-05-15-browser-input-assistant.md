@@ -129,19 +129,19 @@ Write `browser-input-assistant/package.json`:
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "@wxt-dev/module-vue": "latest",
-    "vue": "latest",
-    "webextension-polyfill": "latest",
-    "wxt": "latest"
+    "@wxt-dev/module-vue": "^1.0.0",
+    "vue": "^3.5.0",
+    "webextension-polyfill": "^0.12.0",
+    "wxt": "^0.19.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "latest",
-    "@vue/test-utils": "latest",
-    "happy-dom": "latest",
-    "typescript": "latest",
-    "vite": "latest",
-    "vitest": "latest",
-    "vue-tsc": "latest"
+    "@vitejs/plugin-vue": "^5.2.0",
+    "@vue/test-utils": "^2.4.0",
+    "happy-dom": "^15.0.0",
+    "typescript": "~5.7.0",
+    "vite": "^6.0.0",
+    "vitest": "^2.1.0",
+    "vue-tsc": "^2.2.0"
   }
 }
 ```

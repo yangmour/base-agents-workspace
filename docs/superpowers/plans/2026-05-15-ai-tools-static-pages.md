@@ -274,17 +274,178 @@ Expected: command exits 0.
 
 - [ ] **Step 2: Write GPT Pay page**
 
-Create `node-base-module/ai-tools-collection/gpt-pay/index.html` as a self-contained static page with:
+Create `node-base-module/ai-tools-collection/gpt-pay/index.html` with this complete content:
 
-- Header label `PAYMENT LINK GENERATOR`
-- Title `GPT Pay 链接生成器`
-- Plan cards for `Team 方案` and `Plus 方案`
-- Token textarea with clear button
-- Generate button and guide button
-- Error message container
-- Result area with generated mock links
-- Guide dialog
-- JavaScript functions named `parseToken`, `renderPlan`, `generateLinks`, `copyText`, `openGuide`, and `closeGuide`
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GPT Pay 链接生成器</title>
+  <style>
+    :root {
+      --bg: #eef3f8;
+      --paper: #fff;
+      --ink: #142033;
+      --muted: #697789;
+      --line: #d9e2ec;
+      --blue: #2f73d9;
+      --green: #0f973d;
+      --red: #e54545;
+      --radius: 12px;
+      --shadow: 0 8px 28px rgba(45,75,112,.1);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; color: var(--ink); background: var(--bg); }
+    .shell { max-width: 760px; margin: 0 auto; padding: 32px 16px; }
+    .eyebrow { display: inline-flex; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.6); color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .06em; }
+    h1 { margin: 12px 0 4px; font-size: 28px; }
+    .plans { display: flex; gap: 12px; margin: 20px 0; }
+    .plan-card { flex: 1; padding: 16px; border: 2px solid var(--line); border-radius: var(--radius); background: var(--paper); cursor: pointer; transition: border-color .15s; }
+    .plan-card.selected { border-color: var(--blue); }
+    .plan-card h3 { margin: 0 0 4px; font-size: 18px; }
+    .plan-card .price { margin: 0; font-size: 22px; font-weight: 800; }
+    textarea { width: 100%; min-height: 80px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-family: monospace; resize: vertical; margin: 8px 0; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    button { padding: 8px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); cursor: pointer; font-size: 14px; }
+    button.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .error { color: var(--red); font-size: 13px; min-height: 20px; margin-top: 4px; }
+    .result { margin-top: 16px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); display: none; }
+    .result pre { background: #f4f7fb; padding: 8px; border-radius: 6px; overflow-x: auto; font-size: 13px; }
+    .overlay { position: fixed; inset: 0; z-index: 999; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; }
+    .guide { width: 400px; max-width: 90vw; padding: 20px; border-radius: var(--radius); background: #fff; }
+    .guide h2 { margin: 0 0 12px; font-size: 18px; }
+    .guide ol { margin: 0; padding-left: 20px; line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <span class="eyebrow">PAYMENT LINK GENERATOR</span>
+    <h1>GPT Pay 链接生成器</h1>
+    <p style="color:var(--muted);font-size:14px;">选择方案，粘贴 session 或 access token，生成模拟支付链接。</p>
+
+    <div class="plans">
+      <div class="plan-card" data-plan="team" onclick="selectPlan('team')">
+        <h3>Team 方案</h3>
+        <p class="price">$25</p>
+        <p style="color:var(--muted);font-size:13px;">团队协作，每月 $25</p>
+      </div>
+      <div class="plan-card" data-plan="plus" onclick="selectPlan('plus')">
+        <h3>Plus 方案</h3>
+        <p class="price">$20</p>
+        <p style="color:var(--muted);font-size:13px;">个人增强，每月 $20</p>
+      </div>
+    </div>
+
+    <label style="font-weight:600;font-size:14px;">Session / Access Token</label>
+    <textarea id="tokenInput" placeholder="粘贴 session JSON 或 access token 文本"></textarea>
+    <div class="actions">
+      <button onclick="clearToken()">清空</button>
+      <button class="primary" onclick="generateLinks()">生成链接</button>
+      <button onclick="openGuide()">使用说明</button>
+    </div>
+    <div class="error" id="errorMsg"></div>
+
+    <div class="result" id="resultArea">
+      <p style="font-weight:600;margin:0 0 8px;">生成的模拟链接</p>
+      <div id="linkList"></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:8px;">这些是模拟链接，不调用任何真实支付 API。</p>
+    </div>
+  </main>
+
+  <div class="overlay" id="guideOverlay" style="display:none;" onclick="closeGuide(event)">
+    <div class="guide" onclick="event.stopPropagation()">
+      <h2>使用说明</h2>
+      <ol>
+        <li>选择 Team 或 Plus 方案</li>
+        <li>粘贴 session JSON 或 access token 文本到输入框</li>
+        <li>点击"生成链接"生成模拟支付链接</li>
+        <li>点击链接旁的复制按钮可复制到剪贴板</li>
+        <li>生成结果仅供模拟测试使用</li>
+      </ol>
+      <button onclick="closeGuide()" style="float:right;">关闭</button>
+    </div>
+  </div>
+
+  <script>
+    let selectedPlan = 'team';
+
+    function selectPlan(plan) {
+      selectedPlan = plan;
+      document.querySelectorAll('.plan-card').forEach(el => {
+        el.classList.toggle('selected', el.dataset.plan === plan);
+      });
+    }
+
+    function renderPlan(plan) {
+      return plan === 'team' ? 'Team 方案 ($25)' : 'Plus 方案 ($20)';
+    }
+
+    function parseToken(text) {
+      return text.trim();
+    }
+
+    function generateLinks() {
+      const input = document.getElementById('tokenInput');
+      const error = document.getElementById('errorMsg');
+      const result = document.getElementById('resultArea');
+      const linkList = document.getElementById('linkList');
+
+      error.textContent = '';
+      const token = parseToken(input.value);
+      if (!token) {
+        error.textContent = '请先粘贴 session 或 access token';
+        result.style.display = 'none';
+        return;
+      }
+
+      const tokenPreview = token.length > 20 ? token.slice(0, 20) + '...' : token;
+      const planName = renderPlan(selectedPlan);
+      const mockId = 'pay_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const mockLink = 'https://example.com/gpt-pay/' + mockId;
+
+      linkList.innerHTML = '';
+      const items = [
+        { label: '支付链接', value: mockLink },
+        { label: 'Token (预览)', value: tokenPreview },
+        { label: '方案', value: planName },
+        { label: '状态', value: 'pending' }
+      ];
+      items.forEach(item => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);';
+        row.innerHTML = '<span>' + item.label + '</span><span><code style="background:#f4f7fb;padding:2px 6px;border-radius:4px;font-size:13px;">' + item.value + '</code> <button onclick="copyText(\'' + item.value.replace(/'/g, "\\'") + '\')" style="padding:2px 8px;font-size:12px;">复制</button></span>';
+        linkList.appendChild(row);
+      });
+
+      result.style.display = 'block';
+    }
+
+    function copyText(text) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
+
+    function clearToken() {
+      document.getElementById('tokenInput').value = '';
+      document.getElementById('errorMsg').textContent = '';
+      document.getElementById('resultArea').style.display = 'none';
+    }
+
+    function openGuide() {
+      document.getElementById('guideOverlay').style.display = 'flex';
+    }
+
+    function closeGuide(event) {
+      if (event && event.target !== event.currentTarget) return;
+      document.getElementById('guideOverlay').style.display = 'none';
+    }
+
+    selectPlan('team');
+  </script>
+</body>
+</html>
+```
 
 The implementation must not call any real payment API. Generated links must use `https://example.com/`.
 
@@ -344,17 +505,22 @@ PY
 
 Expected: command exits 0.
 
-- [ ] **Step 2: Verify no real payment host is hardcoded**
+- [ ] **Step 2: Verify no real payment host is hardcoded, all URLs use example.com**
 
 Run:
 
 ```bash
 python3 - <<'PY'
+import re
 from pathlib import Path
 html = Path('node-base-module/ai-tools-collection/gpt-pay/index.html').read_text()
 assert 'payurl.779.chat' not in html
 assert 'stripe.com' not in html
 assert 'api.openai.com' not in html
+# All URLs must use example.com
+urls = re.findall(r'https?://[^\s"\'<>]+', html)
+for url in urls:
+    assert url.startswith('https://example.com/'), f'非 example.com URL 存在: {url}'
 PY
 ```
 
