@@ -44,7 +44,7 @@ Run:
 python3 - <<'PY'
 import json
 from pathlib import Path
-p = Path('/Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/image-config.json')
+p = Path('fn-devops/dockerfiles/image-config.json')
 print(json.dumps(json.loads(p.read_text()), ensure_ascii=False, indent=2))
 PY
 ```
@@ -96,7 +96,7 @@ The surrounding JSON should remain valid. The relevant section should look like:
 Run:
 
 ```bash
-python3 -m json.tool /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/image-config.json >/tmp/image-config.validated.json
+python3 -m json.tool fn-devops/dockerfiles/image-config.json >/tmp/image-config.validated.json
 ```
 
 Expected: command exits with code 0.
@@ -106,7 +106,7 @@ Expected: command exits with code 0.
 Run:
 
 ```bash
-cd /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles && python3 - <<'PY'
+cd fn-devops/dockerfiles && python3 - <<'PY'
 import json
 from pathlib import Path
 config = json.loads(Path('image-config.json').read_text())
@@ -129,7 +129,7 @@ dev-tools config ok
 Run:
 
 ```bash
-cd /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles && git status --short && git add image-config.json && git commit -m "feat(dev-tools): add image config"
+cd fn-devops/dockerfiles && git status --short && git add image-config.json && git commit -m "feat(dev-tools): add image config"
 ```
 
 Expected: commit succeeds. If this repository requires signed commits or hooks fail, fix the hook-reported issue and create a new commit.
@@ -146,7 +146,7 @@ Expected: commit succeeds. If this repository requires signed commits or hooks f
 Run:
 
 ```bash
-mkdir -p /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/dev-tools
+mkdir -p fn-devops/dockerfiles/dev-tools
 ```
 
 Expected: directory exists.
@@ -311,7 +311,7 @@ Run:
 ```bash
 python3 - <<'PY'
 from pathlib import Path
-p = Path('/Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/dev-tools/Dockerfile')
+p = Path('fn-devops/dockerfiles/dev-tools/Dockerfile')
 text = p.read_text()
 required = [
     'FROM ubuntu:${PULL_TAG}',
@@ -382,7 +382,7 @@ exec "$@"
 Run:
 
 ```bash
-chmod +x /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/dev-tools/entrypoint.sh
+chmod +x fn-devops/dockerfiles/dev-tools/entrypoint.sh
 ```
 
 Expected: command exits with code 0.
@@ -392,7 +392,7 @@ Expected: command exits with code 0.
 Run:
 
 ```bash
-bash -n /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/dev-tools/entrypoint.sh
+bash -n fn-devops/dockerfiles/dev-tools/entrypoint.sh
 ```
 
 Expected: command exits with code 0.
@@ -402,7 +402,7 @@ Expected: command exits with code 0.
 Run:
 
 ```bash
-cd /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles && git status --short && git add dev-tools/Dockerfile dev-tools/entrypoint.sh && git commit -m "feat(dev-tools): add development tool image"
+cd fn-devops/dockerfiles && git status --short && git add dev-tools/Dockerfile dev-tools/entrypoint.sh && git commit -m "feat(dev-tools): add development tool image"
 ```
 
 Expected: commit succeeds. If hooks fail, fix the hook-reported issue and create a new commit.
@@ -499,7 +499,7 @@ exec docker run --rm \
 Run:
 
 ```bash
-chmod +x /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/dev-tools/run-dev-tools.sh
+chmod +x fn-devops/dockerfiles/dev-tools/run-dev-tools.sh
 ```
 
 Expected: command exits with code 0.
@@ -509,7 +509,7 @@ Expected: command exits with code 0.
 Run:
 
 ```bash
-bash -n /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/dev-tools/run-dev-tools.sh
+bash -n fn-devops/dockerfiles/dev-tools/run-dev-tools.sh
 ```
 
 Expected: command exits with code 0.
@@ -521,7 +521,7 @@ Run:
 ```bash
 python3 - <<'PY'
 from pathlib import Path
-text = Path('/Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/dev-tools/run-dev-tools.sh').read_text()
+text = Path('fn-devops/dockerfiles/dev-tools/run-dev-tools.sh').read_text()
 required = [
     '${WORKSPACE_DIR}:${CONTAINER_WORKSPACE}',
     '${HOST_HOME}/.m2:/home/dev/.m2',
@@ -551,7 +551,7 @@ run script mount config ok
 Run:
 
 ```bash
-cd /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles && git status --short && git add dev-tools/run-dev-tools.sh && git commit -m "feat(dev-tools): add container run wrapper"
+cd fn-devops/dockerfiles && git status --short && git add dev-tools/run-dev-tools.sh && git commit -m "feat(dev-tools): add container run wrapper"
 ```
 
 Expected: commit succeeds. If hooks fail, fix the hook-reported issue and create a new commit.
@@ -637,7 +637,7 @@ IMAGE=my-dev-tools:tag ./run-dev-tools.sh
 如果宿主机 `/workspace` 不存在，脚本会退出并提示。可以通过 `WORKSPACE_DIR` 改宿主机目录：
 
 ```bash
-WORKSPACE_DIR=/Users/awen/Desktop/dev/git ./run-dev-tools.sh
+WORKSPACE_DIR=/path/to/your/workspace ./run-dev-tools.sh
 ```
 
 容器内工作区路径固定为 `/workspace`。
@@ -765,7 +765,7 @@ Run:
 ```bash
 python3 - <<'PY'
 from pathlib import Path
-text = Path('/Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/dev-tools/README.md').read_text()
+text = Path('fn-devops/dockerfiles/dev-tools/README.md').read_text()
 required = ['## 构建', '## 运行', '## 默认挂载', '## Maven 配置', '## AI CLI 配置', '## Kubernetes 配置', '## 验证', '## 安全边界']
 missing = [item for item in required if item not in text]
 assert not missing, missing
@@ -784,7 +784,7 @@ README sections ok
 Run:
 
 ```bash
-cd /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles && git status --short && git add dev-tools/README.md && git commit -m "docs(dev-tools): document development tool image"
+cd fn-devops/dockerfiles && git status --short && git add dev-tools/README.md && git commit -m "docs(dev-tools): document development tool image"
 ```
 
 Expected: commit succeeds. If hooks fail, fix the hook-reported issue and create a new commit.
@@ -803,7 +803,7 @@ Expected: commit succeeds. If hooks fail, fix the hook-reported issue and create
 Run:
 
 ```bash
-cd /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles && bash build-images.sh dev-tools
+cd fn-devops/dockerfiles && bash build-images.sh dev-tools
 ```
 
 Expected: Docker image `dev-tools:ubuntu24.04` builds successfully. If the build script tags the image with a repository prefix, inspect the build output and set `IMAGE` accordingly in later verification commands.
@@ -895,7 +895,7 @@ Expected: all three commands print version information. If an npm package name i
 Run:
 
 ```bash
-mkdir -p /tmp/dev-tools-workspace && cd /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/dev-tools && WORKSPACE_DIR=/tmp/dev-tools-workspace ./run-dev-tools.sh pwd
+mkdir -p /tmp/dev-tools-workspace && cd fn-devops/dockerfiles/dev-tools && WORKSPACE_DIR=/tmp/dev-tools-workspace ./run-dev-tools.sh pwd
 ```
 
 Expected output:
@@ -924,7 +924,7 @@ cat > ~/.dev-tools-container/maven/settings.xml <<'XML'
   </profiles>
 </settings>
 XML
-cd /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/dev-tools && WORKSPACE_DIR=/tmp/dev-tools-workspace ./run-dev-tools.sh mvn help:effective-settings | grep dev-tools-marker
+cd fn-devops/dockerfiles/dev-tools && WORKSPACE_DIR=/tmp/dev-tools-workspace ./run-dev-tools.sh mvn help:effective-settings | grep dev-tools-marker
 ```
 
 Expected output includes:
@@ -938,7 +938,7 @@ dev-tools-marker
 If Tasks 6.1 through 6.10 required edits, run:
 
 ```bash
-cd /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles && git status --short && git add image-config.json dev-tools/Dockerfile dev-tools/entrypoint.sh dev-tools/run-dev-tools.sh dev-tools/README.md && git commit -m "fix(dev-tools): align tool installation and verification"
+cd fn-devops/dockerfiles && git status --short && git add image-config.json dev-tools/Dockerfile dev-tools/entrypoint.sh dev-tools/run-dev-tools.sh dev-tools/README.md && git commit -m "fix(dev-tools): align tool installation and verification"
 ```
 
 Expected: commit succeeds if there are changes. If there are no changes, skip this step.
@@ -959,7 +959,7 @@ Expected: commit succeeds if there are changes. If there are no changes, skip th
 Run:
 
 ```bash
-python3 -m json.tool /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/image-config.json >/tmp/image-config.final.json
+python3 -m json.tool fn-devops/dockerfiles/image-config.json >/tmp/image-config.final.json
 ```
 
 Expected: command exits with code 0.
@@ -969,7 +969,7 @@ Expected: command exits with code 0.
 Run:
 
 ```bash
-bash -n /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/dev-tools/entrypoint.sh && bash -n /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles/dev-tools/run-dev-tools.sh
+bash -n fn-devops/dockerfiles/dev-tools/entrypoint.sh && bash -n fn-devops/dockerfiles/dev-tools/run-dev-tools.sh
 ```
 
 Expected: command exits with code 0.
@@ -979,7 +979,7 @@ Expected: command exits with code 0.
 Run:
 
 ```bash
-cd /Users/awen/Desktop/dev/git/base/fn-devops/dockerfiles && git status --short
+cd fn-devops/dockerfiles && git status --short
 ```
 
 Expected: clean working tree, or only expected uncommitted documentation outside the `fn-devops/dockerfiles` nested repository. Do not commit files outside this nested repository unless the user explicitly requests it.

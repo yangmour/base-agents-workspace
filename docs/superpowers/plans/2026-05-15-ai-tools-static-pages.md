@@ -34,7 +34,7 @@
 Run:
 
 ```bash
-mkdir -p "/Users/awen/Desktop/dev/git/base/node-base-module/ai-tools-collection/session-upload-cpa"
+mkdir -p "node-base-module/ai-tools-collection/session-upload-cpa"
 ```
 
 Expected: command exits 0.
@@ -44,7 +44,7 @@ Expected: command exits 0.
 Run:
 
 ```bash
-cp "/Users/awen/Desktop/dev/git/base/node-base-module/ai-tools-collection/index.html" "/Users/awen/Desktop/dev/git/base/node-base-module/ai-tools-collection/session-upload-cpa/index.html"
+cp "node-base-module/ai-tools-collection/index.html" "node-base-module/ai-tools-collection/session-upload-cpa/index.html"
 ```
 
 Expected: command exits 0.
@@ -54,7 +54,7 @@ Expected: command exits 0.
 Run:
 
 ```bash
-test -s "/Users/awen/Desktop/dev/git/base/node-base-module/ai-tools-collection/session-upload-cpa/index.html"
+test -s "node-base-module/ai-tools-collection/session-upload-cpa/index.html"
 ```
 
 Expected: command exits 0.
@@ -246,7 +246,7 @@ Run:
 ```bash
 python3 - <<'PY'
 from pathlib import Path
-html = Path('/Users/awen/Desktop/dev/git/base/node-base-module/ai-tools-collection/index.html').read_text()
+html = Path('node-base-module/ai-tools-collection/index.html').read_text()
 assert './session-upload-cpa/' in html
 assert './gpt-pay/' in html
 assert 'AI 小工具合集' in html
@@ -267,7 +267,7 @@ Expected: command exits 0.
 Run:
 
 ```bash
-mkdir -p "/Users/awen/Desktop/dev/git/base/node-base-module/ai-tools-collection/gpt-pay"
+mkdir -p "node-base-module/ai-tools-collection/gpt-pay"
 ```
 
 Expected: command exits 0.
@@ -295,7 +295,7 @@ Run:
 ```bash
 python3 - <<'PY'
 from pathlib import Path
-html = Path('/Users/awen/Desktop/dev/git/base/node-base-module/ai-tools-collection/gpt-pay/index.html').read_text()
+html = Path('node-base-module/ai-tools-collection/gpt-pay/index.html').read_text()
 required = [
   'PAYMENT LINK GENERATOR',
   'GPT Pay 链接生成器',
@@ -330,10 +330,10 @@ Run:
 python3 - <<'PY'
 from pathlib import Path
 files = [
-  '/Users/awen/Desktop/dev/git/base/node-base-module/ai-tools-collection/index.html',
-  '/Users/awen/Desktop/dev/git/base/node-base-module/ai-tools-collection/session-upload-cpa/index.html',
-  '/Users/awen/Desktop/dev/git/base/node-base-module/ai-tools-collection/gpt-pay/index.html',
-  '/Users/awen/Desktop/dev/git/base/docs/superpowers/specs/2026-05-15-ai-tools-static-pages-design.md',
+  'node-base-module/ai-tools-collection/index.html',
+  'node-base-module/ai-tools-collection/session-upload-cpa/index.html',
+  'node-base-module/ai-tools-collection/gpt-pay/index.html',
+  'docs/superpowers/specs/2026-05-15-ai-tools-static-pages-design.md',
 ]
 for file in files:
     path = Path(file)
@@ -351,7 +351,7 @@ Run:
 ```bash
 python3 - <<'PY'
 from pathlib import Path
-html = Path('/Users/awen/Desktop/dev/git/base/node-base-module/ai-tools-collection/gpt-pay/index.html').read_text()
+html = Path('node-base-module/ai-tools-collection/gpt-pay/index.html').read_text()
 assert 'payurl.779.chat' not in html
 assert 'stripe.com' not in html
 assert 'api.openai.com' not in html
@@ -365,8 +365,8 @@ Expected: command exits 0.
 Run:
 
 ```bash
-git -C "/Users/awen/Desktop/dev/git/base" status --short --untracked-files=all
-git -C "/Users/awen/Desktop/dev/git/base/node-base-module" status --short --untracked-files=all
+git -C "$(git rev-parse --show-toplevel)" status --short --untracked-files=all
+git -C "node-base-module" status --short --untracked-files=all
 ```
 
 Expected:
@@ -387,12 +387,12 @@ Expected:
 Run:
 
 ```bash
-git -C "/Users/awen/Desktop/dev/git/base/node-base-module" add \
+git -C "node-base-module" add \
   ai-tools-collection/index.html \
   ai-tools-collection/session-upload-cpa/index.html \
   ai-tools-collection/gpt-pay/index.html
 
-git -C "/Users/awen/Desktop/dev/git/base/node-base-module" commit -m "$(cat <<'EOF'
+git -C "node-base-module" commit -m "$(cat <<'EOF'
 feat(ai-tools): 新增 GPT Pay 静态工具页
 
 实现内容:
@@ -412,9 +412,9 @@ Expected: commit succeeds.
 Run:
 
 ```bash
-git -C "/Users/awen/Desktop/dev/git/base" add docs/superpowers/specs/2026-05-15-ai-tools-static-pages-design.md
+git -C "$(git rev-parse --show-toplevel)" add docs/superpowers/specs/2026-05-15-ai-tools-static-pages-design.md
 
-git -C "/Users/awen/Desktop/dev/git/base" commit -m "$(cat <<'EOF'
+git -C "$(git rev-parse --show-toplevel)" commit -m "$(cat <<'EOF'
 docs(docs): 添加 AI 工具静态页面设计
 
 实现内容:
@@ -433,8 +433,8 @@ Expected: commit succeeds.
 Run:
 
 ```bash
-git -C "/Users/awen/Desktop/dev/git/base/node-base-module" status --short --untracked-files=all
-git -C "/Users/awen/Desktop/dev/git/base" status --short --untracked-files=all
+git -C "node-base-module" status --short --untracked-files=all
+git -C "$(git rev-parse --show-toplevel)" status --short --untracked-files=all
 ```
 
 Expected: no unrelated new changes except pre-existing files outside this task, if any.

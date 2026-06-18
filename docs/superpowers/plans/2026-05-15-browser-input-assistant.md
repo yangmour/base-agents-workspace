@@ -102,7 +102,7 @@ Responsibilities:
 Run:
 
 ```bash
-mkdir -p "/Users/awen/Desktop/dev/git/base/browser-input-assistant/src/test"
+mkdir -p "browser-input-assistant/src/test"
 ```
 
 Expected: command exits with code 0.
