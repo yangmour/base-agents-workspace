@@ -315,11 +315,11 @@ Expected: output contains all four phrases.
 ### Task 5: 冻结 ADR 索引和四条 P0 决策
 
 **Files:**
-- Modify: `base-module/docs/架构设计/ADR/README.md`
-- Modify: `base-module/docs/架构设计/ADR/ADR-001-admin-businessline.md`
-- Modify: `base-module/docs/架构设计/ADR/ADR-002-token-refresh-owned-by-iam.md`
-- Modify: `base-module/docs/架构设计/ADR/ADR-003-menu-route-contract-menutreevo.md`
-- Modify: `base-module/docs/架构设计/ADR/ADR-004-backend-default-deny.md`
+- Modify: `java-base-module/docs/架构设计/ADR/README.md`
+- Modify: `java-base-module/docs/架构设计/ADR/ADR-001-admin-businessline.md`
+- Modify: `java-base-module/docs/架构设计/ADR/ADR-002-token-refresh-owned-by-iam.md`
+- Modify: `java-base-module/docs/架构设计/ADR/ADR-003-menu-route-contract-menutreevo.md`
+- Modify: `java-base-module/docs/架构设计/ADR/ADR-004-backend-default-deny.md`
 
 - [ ] **Step 1: Update ADR README status**
 
@@ -426,7 +426,7 @@ Expected: output includes README and ADR-001 through ADR-004.
 ### Task 6: 冻结顶层总纲基线说明
 
 **Files:**
-- Modify: `base-module/docs/项目架构评价与修改计划.md:3-28`
+- Modify: `java-base-module/docs/项目架构评价与修改计划.md:3-28`
 
 - [ ] **Step 1: Update top-level document status**
 
@@ -475,9 +475,9 @@ Expected: output contains all three phrases.
 ### Task 7: Run final consistency checks
 
 **Files:**
-- Check: `base-module/docs/架构设计/*.md`
-- Check: `base-module/docs/架构设计/ADR/*.md`
-- Check: `base-module/docs/项目架构评价与修改计划.md`
+- Check: `java-base-module/docs/架构设计/*.md`
+- Check: `java-base-module/docs/架构设计/ADR/*.md`
+- Check: `java-base-module/docs/项目架构评价与修改计划.md`
 
 - [ ] **Step 1: Check frozen baseline phrases**
 
@@ -521,25 +521,41 @@ Expected: output only includes `.md` files under `java-base-module/docs/` and th
 
 - [ ] **Step 5: Commit P0 document baseline**
 
+> **跨仓库提交说明**：`java-base-module/` 在根仓库 `.gitignore` 中被忽略（独立仓库）。架构文档变更必须在 `java-base-module` 子仓库中执行 `git add` 和 `git commit`。根仓库只提交 `docs/superpowers/plans/` 下的计划文档。
+
 Run:
 
 ```bash
-git status --short
-git diff -- "java-base-module/docs" "docs/superpowers/plans/2026-05-13-p0-doc-baseline-freeze-plan.md"
-git add \
-  "java-base-module/docs/架构设计/README.md" \
-  "java-base-module/docs/架构设计/P0-架构决策与代码重构任务清单.md" \
-  "java-base-module/docs/架构设计/00-当前架构现状盘点.md" \
-  "java-base-module/docs/架构设计/目标与现状差距矩阵.md" \
-  "java-base-module/docs/架构设计/ADR/README.md" \
-  "java-base-module/docs/架构设计/ADR/ADR-001-admin-businessline.md" \
-  "java-base-module/docs/架构设计/ADR/ADR-002-token-refresh-owned-by-iam.md" \
-  "java-base-module/docs/架构设计/ADR/ADR-003-menu-route-contract-menutreevo.md" \
-  "java-base-module/docs/架构设计/ADR/ADR-004-backend-default-deny.md" \
-  "java-base-module/docs/项目架构评价与修改计划.md" \
-  "docs/superpowers/plans/2026-05-13-p0-doc-baseline-freeze-plan.md"
-git commit -m "$(cat <<'EOF'
+# 1. 提交 java-base-module 子仓库中的架构文档
+git -C java-base-module status --short
+git -C java-base-module diff -- docs/
+git -C java-base-module add \
+  "docs/架构设计/README.md" \
+  "docs/架构设计/P0-架构决策与代码重构任务清单.md" \
+  "docs/架构设计/00-当前架构现状盘点.md" \
+  "docs/架构设计/目标与现状差距矩阵.md" \
+  "docs/架构设计/ADR/README.md" \
+  "docs/架构设计/ADR/ADR-001-admin-businessline.md" \
+  "docs/架构设计/ADR/ADR-002-token-refresh-owned-by-iam.md" \
+  "docs/架构设计/ADR/ADR-003-menu-route-contract-menutreevo.md" \
+  "docs/架构设计/ADR/ADR-004-backend-default-deny.md" \
+  "docs/项目架构评价与修改计划.md"
+git -C java-base-module commit -m "$(cat <<'EOF'
 docs(docs): 收敛 P0 架构基线
+
+冻结 P0 文档基线，统一索引、现状盘点、差距矩阵、ADR、任务清单和顶层总纲的执行边界。
+
+🤖
+EOF
+)"
+git -C java-base-module status --short
+
+# 2. 提交根仓库的计划文档
+git status --short
+git diff -- "docs/superpowers/plans/2026-05-13-p0-doc-baseline-freeze-plan.md"
+git add "docs/superpowers/plans/2026-05-13-p0-doc-baseline-freeze-plan.md"
+git commit -m "$(cat <<'EOF'
+docs(plan): 完成 P0 文档基线冻结计划
 
 冻结 P0 文档基线，统一索引、现状盘点、差距矩阵、ADR、任务清单和顶层总纲的执行边界。
 
