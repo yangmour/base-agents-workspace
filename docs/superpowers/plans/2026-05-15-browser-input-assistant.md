@@ -1660,7 +1660,8 @@ import { createProgressOverlay } from '../src/ui/progress-overlay';
 import { showToast } from '../src/ui/toast';
 import type { TriggerSource } from '../src/types/input-task';
 
-installTargetMemory();
+let cleanupTargetMemory: (() => void) | null = null;
+cleanupTargetMemory = installTargetMemory();
 
 let activeController: InputTaskController | null = null;
 let selectionCleanup: (() => void) | null = null;
