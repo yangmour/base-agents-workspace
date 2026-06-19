@@ -181,10 +181,12 @@ ARG NODE_14_VERSION=14
 ARG DEFAULT_NODE_VERSION=22
 
 ARG KUBECTL_VERSION=v1.30.0
-ARG KT_CONNECT_VERSION=0.3.7
+ARG KT_CONNECT_VERSION=0.4.4
 ARG CLAUDE_CODE_VERSION=latest
 ARG CODEX_CLI_VERSION=latest
 ARG GEMINI_CLI_VERSION=latest
+# 注意: AI CLI 版本为 latest 是为了保持镜像可构建，构建结果不可重现。
+# 如需固定版本，覆盖 --build-arg CLAUDE_CODE_VERSION=x.y.z 等。
 ARG SUPERPOWERS_PLUGIN_URL=https://claude.com/plugins/superpowers
 ARG CLAUDE_SKILLS_REPO=https://github.com/anthropics/skills.git
 
@@ -317,7 +319,7 @@ required = [
     'FROM ubuntu:${PULL_TAG}',
     'ARG MAVEN_VERSION=3.6.3',
     'ARG KUBECTL_VERSION=v1.30.0',
-    'ARG KT_CONNECT_VERSION=0.3.7',
+    'ARG KT_CONNECT_VERSION=0.4.4',
     'python3-pip',
     'python3-venv',
     'pipx',
@@ -447,6 +449,7 @@ mkdir -p \
   "${DEV_TOOLS_HOME}/claude-skills"
 
 if [ ! -f "${DEV_TOOLS_HOME}/maven/settings.xml" ]; then
+  echo "首次运行：创建默认 Maven settings.xml（如已有阿里云镜像配置请覆盖此文件）" >&2
   cat > "${DEV_TOOLS_HOME}/maven/settings.xml" <<'XML'
 <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -592,7 +595,7 @@ docker build -t dev-tools:ubuntu24.04 dev-tools
 docker build \
   -t dev-tools:ubuntu24.04 \
   --build-arg KUBECTL_VERSION=v1.30.0 \
-  --build-arg KT_CONNECT_VERSION=0.3.7 \
+  --build-arg KT_CONNECT_VERSION=0.4.4 \
   --build-arg CLAUDE_CODE_VERSION=latest \
   --build-arg CODEX_CLI_VERSION=latest \
   --build-arg GEMINI_CLI_VERSION=latest \
@@ -932,6 +935,17 @@ Expected output includes:
 ```text
 dev-tools-marker
 ```
+
+- [ ] **Step 10a: Cleanup test Maven settings**
+
+Run:
+```bash
+# 删除测试用的 Maven settings marker 文件
+rm -f ~/.dev-tools-container/maven/settings.xml
+# 清理临时 workspace
+rm -rf /tmp/dev-tools-workspace
+```
+Expected: cleanup succeeds, no leftover test files.
 
 - [ ] **Step 11: Commit any build-fix changes**
 
