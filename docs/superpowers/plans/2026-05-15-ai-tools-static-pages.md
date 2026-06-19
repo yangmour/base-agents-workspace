@@ -544,11 +544,13 @@ Expected:
 
 ### Task 5: Commit Changes
 
+> **跨仓库提交说明**：`node-base-module/` 是独立 Git 仓库（根仓库 `.gitignore` 中已忽略）。本计划涉及两个独立仓库的提交：`node-base-module`（工具页面文件）和根仓库（design spec 文件）。两个仓库需要**分别**执行 git 操作。
+
 **Files:**
 - Commit in root repo: `docs/superpowers/specs/2026-05-15-ai-tools-static-pages-design.md`
 - Commit in `node-base-module`: `ai-tools-collection/index.html`, `ai-tools-collection/session-upload-cpa/index.html`, `ai-tools-collection/gpt-pay/index.html`
 
-- [ ] **Step 1: Commit node-base-module static pages**
+- [ ] **Step 1: Commit node-base-module static pages**（在 `node-base-module` 子仓库中执行）
 
 Run:
 
@@ -573,7 +575,7 @@ EOF
 
 Expected: commit succeeds.
 
-- [ ] **Step 2: Commit root design spec**
+- [ ] **Step 2: Commit root design spec**（在根仓库中执行）
 
 Run:
 
