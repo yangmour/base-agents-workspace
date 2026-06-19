@@ -4,7 +4,7 @@
 
 当前仓库的 Docker 镜像构建资产集中在 `fn-devops/dockerfiles/`，并通过 `image-config.json` 与 `build-images.sh` 统一管理。现需要新增一个开发工具镜像，用于在容器中提供常用 Linux 命令、Kubernetes 工具、Java/Node/Maven 多版本环境，以及 Claude Code CLI、Codex CLI、Gemini CLI 等 AI 命令行工具。
 
-该镜像只承担“开发工具箱”职责，不和 `base-module/本地开发/docker-compose.yml` 中的 MySQL、Redis、RabbitMQ、Nacos 等本地中间件混在一起。
+该镜像只承担“开发工具箱”职责，不和 `java-base-module/本地开发/docker-compose.yml` 中的 MySQL、Redis、RabbitMQ、Nacos 等本地中间件混在一起。
 
 ## 目标
 

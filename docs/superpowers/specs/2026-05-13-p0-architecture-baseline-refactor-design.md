@@ -4,7 +4,7 @@
 >
 > 状态：已确认设计
 >
-> 范围：`base-module`、`node-base-module/base-admin-web`、架构设计文档
+> 范围：`java-base-module`、`node-base-module/base-admin-web`、架构设计文档
 
 ## 1. 背景
 
@@ -52,12 +52,12 @@
 
 范围：
 
-- `base-module/docs/架构设计/README.md`
-- `base-module/docs/架构设计/00-当前架构现状盘点.md`
-- `base-module/docs/架构设计/目标与现状差距矩阵.md`
-- `base-module/docs/架构设计/ADR/*`
-- `base-module/docs/架构设计/P0-架构决策与代码重构任务清单.md`
-- `base-module/docs/项目架构评价与修改计划.md`
+- `java-base-module/docs/架构设计/README.md`
+- `java-base-module/docs/架构设计/00-当前架构现状盘点.md`
+- `java-base-module/docs/架构设计/目标与现状差距矩阵.md`
+- `java-base-module/docs/架构设计/ADR/*`
+- `java-base-module/docs/架构设计/P0-架构决策与代码重构任务清单.md`
+- `java-base-module/docs/项目架构评价与修改计划.md`
 
 提交信息：
 
@@ -73,9 +73,9 @@ docs(docs): 收敛 P0 架构基线
 
 范围：
 
-- `base-module/common/base-basic`
-- `base-module/common/base-authz`
-- `base-module/common/base-feignClients`
+- `java-base-module/common/base-basic`
+- `java-base-module/common/base-authz`
+- `java-base-module/common/base-feignClients`
 - `node-base-module/base-admin-web/src/types`
 - `node-base-module/base-admin-web/src/utils/request.ts`
 
@@ -93,9 +93,9 @@ refactor(common): 收敛基础契约与请求上下文
 
 范围：
 
-- `base-module/server/api-gateway`
-- 必要时涉及 `base-module/common/base-basic`
-- 必要时涉及 `base-module/common/base-redis`
+- `java-base-module/server/api-gateway`
+- 必要时涉及 `java-base-module/common/base-basic`
+- 必要时涉及 `java-base-module/common/base-redis`
 
 提交信息：
 
@@ -111,10 +111,10 @@ refactor(api-gateway): 收敛网关职责边界
 
 范围：
 
-- `base-module/server/auth-center`
-- `base-module/server/admin`
-- `base-module/common/base-authz`
-- `base-module/common/base-feignClients`
+- `java-base-module/server/auth-center`
+- `java-base-module/server/admin`
+- `java-base-module/common/base-authz`
+- `java-base-module/common/base-feignClients`
 
 提交信息：
 
@@ -130,10 +130,10 @@ refactor(auth-center): 建立 IAM 与权限最小闭环
 
 范围：
 
-- `base-module/server/auth-center`
-- `base-module/server/admin`
+- `java-base-module/server/auth-center`
+- `java-base-module/server/admin`
 - `node-base-module/base-admin-web`
-- 必要时涉及 `base-module/common/base-feignClients`
+- 必要时涉及 `java-base-module/common/base-feignClients`
 
 提交信息：
 
@@ -149,9 +149,9 @@ refactor(global): 收敛租户业务线与前端契约
 
 范围：
 
-- `base-module/common/base-rabbitmq`
-- `base-module/server/auth-center`
-- `base-module/server/admin`
+- `java-base-module/common/base-rabbitmq`
+- `java-base-module/server/auth-center`
+- `java-base-module/server/admin`
 - 必要时新增或调整审计相关模块
 
 提交信息：
@@ -216,7 +216,7 @@ feat(common): 添加审计事件最小能力
 后端主题根据影响范围执行对应 Maven 命令：
 
 ```bash
-cd base-module
+cd java-base-module
 mvn -pl common/base-basic -am test -Drevision=1.0
 mvn -pl server/api-gateway -am test -Drevision=1.0
 mvn -pl server/auth-center -am test -Drevision=1.0
