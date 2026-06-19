@@ -8,6 +8,10 @@
 
 **Tech Stack:** WXT, Vue 3, TypeScript, webextension-polyfill, Vitest, npm.
 
+> **NPM 包名说明**：dev-tools 镜像的 Dockerfile 中使用的 AI CLI npm 包名（`@anthropic-ai/claude-code`、`@openai/codex`、`@google/gemini-cli`）基于推测。构建前应先执行 `npm view <包名> version` 验证包是否存在。如果返回 404，需要替换为正确的包名。
+>
+> **Design spec 跟踪说明**：本计划在执行过程中多次要求更新 `docs/superpowers/specs/2026-05-15-browser-input-assistant-design.md` 中的任务状态。每次更新时执行者需要直接打开该文件，找到对应的状态表格行，将状态从 `待完成` 改为 `已完成`。
+
 ---
 
 ## Source Design
@@ -331,7 +335,21 @@ Run from `browser-input-assistant/`:
 npm run test && npm run type-check
 ```
 
-Expected: test suite reports no test files or passes; type-check completes after WXT generates types. If WXT types are missing, run `npm run dev` once, stop it after startup, then rerun type-check.
+Expected: test suite reports no test files or passes; type-check completes after WXT generates types.
+
+- [ ] **Step 9a: Regenerate WXT types if type-check fails**（仅在 type-check 失败时执行）
+
+如果 Step 9 的 `npm run type-check` 因为找不到 `.wxt/tsconfig.json` 等 WXT 生成文件而失败：
+
+```bash
+# 启动 WXT dev 模式以生成类型文件，启动后立即 Ctrl+C 停止
+npx wxt --version        # 验证 wxt 已安装
+npx wxt prepare          # 仅生成类型文件而不启动 dev server
+# 重新执行 type-check
+npm run type-check
+```
+
+Expected: type-check now passes.
 
 - [ ] **Step 10: Update design status**
 
@@ -1277,7 +1295,15 @@ export async function inputText(
   config: AssistantConfig,
   options: InputEngineOptions = {}
 ): Promise<InputTaskController> {
-  const controller = options.controller ?? new InputTaskController(crypto.randomUUID(), text.length);
+  // crypto.randomUUID() 在非安全上下文（HTTP）下不可用
+  // 使用 fallback: 手动生成 UUID
+  const uuid = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0;
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+      });
+  const controller = options.controller ?? new InputTaskController(uuid, text.length);
 
   for (const char of text) {
     await waitWhilePaused(controller);
@@ -1681,7 +1707,15 @@ async function runInput(source: TriggerSource): Promise<void> {
       if (!confirmed) return;
     }
 
-    const controller = new InputTaskController(crypto.randomUUID(), text.length);
+    const controller = new InputTaskController(
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = Math.random() * 16 | 0;
+            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+          }),
+      text.length
+    );
     activeController = controller;
     const overlay = createProgressOverlay({
       onPause: () => controller.pause(),
