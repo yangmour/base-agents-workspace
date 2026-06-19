@@ -45,7 +45,18 @@
 **Files:**
 - Create: `java-base-module/docs/架构设计/00-当前架构现状盘点.md`
 
-- [ ] **Step 1: 写入当前实现盘点文档**
+> **重要：** 本文档可能已由 P0 基线冻结计划创建。执行 Step 1 之前，必须先确认文件是否已存在。
+> 如已存在，跳过创建步骤，直接执行 Step 3 验证关键内容。
+
+- [ ] **Step 0: 检查文件是否已存在**
+
+Run:
+```bash
+test -f java-base-module/docs/架构设计/00-当前架构现状盘点.md && echo "已存在，跳过创建" || echo "不存在，需要创建"
+```
+Expected: 根据输出选择后续流程。
+
+- [ ] **Step 1: 写入当前实现盘点文档**（仅当 Step 0 输出"不存在"时执行）
 
 创建包含以下结构的盘点文档：
 
@@ -175,7 +186,18 @@ Expected: 输出 5 个章节标题
 **Files:**
 - Create: `java-base-module/docs/架构设计/目标与现状差距矩阵.md`
 
-- [ ] **Step 1: 写入差距矩阵**
+> **重要：** 本文档可能已由 P0 基线冻结计划创建。执行 Step 1 之前，必须先确认文件是否已存在。
+
+- [ ] **Step 0: 检查文件是否已存在**
+
+Run:
+```bash
+test -f java-base-module/docs/架构设计/目标与现状差距矩阵.md && echo "已存在，跳过创建" || echo "不存在，需要创建"
+```
+
+- [ ] **Step 1: 写入差距矩阵**（仅当 Step 0 输出"不存在"时执行）
+
+> **如文件已存在（P0 基线冻结计划已创建），仅验证关键口径（Step 3）。**
 
 矩阵字段使用：领域、目标架构、当前实现、主要差距、P0 是否处理、关联任务、验收重点。
 
@@ -232,6 +254,15 @@ Expected: 输出四类关键口径。
 - Create: `java-base-module/docs/架构设计/ADR/ADR-002-token-refresh-owned-by-iam.md`
 - Create: `java-base-module/docs/架构设计/ADR/ADR-003-menu-route-contract-menutreevo.md`
 - Create: `java-base-module/docs/架构设计/ADR/ADR-004-backend-default-deny.md`
+
+> **重要：** ADR 文件可能已由 P0 基线冻结计划创建。执行 Step 之前，必须先确认文件是否已存在。
+
+- [ ] **Step 0: 检查 ADR 文件是否已存在**
+
+Run:
+```bash
+test -f java-base-module/docs/架构设计/ADR/README.md && echo "ADR 已存在，跳过创建" || echo "需要创建 ADR"
+```
 
 - [ ] **Step 1: 写入 ADR 索引**
 
@@ -501,16 +532,25 @@ Expected: 只包含 Markdown 文档和计划文档，无 SQL 或其他文件。
 
 Run:
 ```bash
-grep -Rn "server/admin-service" java-base-module/docs/架构设计/ | grep -v "仅作为未来演进名\|旧口径\|已弃用"
+# 不应该出现未标记为旧口径的 admin-service 名称
+# 当前物理模块名是 server/admin
+grep -Rn "server/admin-service" java-base-module/docs/架构设计/ | grep -v "旧口径\|目标名称\|未来演进名\|已弃用\|不写" || echo "口径一致，无残留"
 ```
-Expected: 不应输出（所有 `admin-service` 出现都应标记为旧口径）。
+Expected: 输出"口径一致，无残留"。
 
 - [ ] **Step 4: 提交**
 
+> **跨仓库提交说明**：架构文档变更在 `java-base-module` 子仓库中提交，计划文档在根仓库提交。
+
 Run:
 ```bash
-git add java-base-module/docs/架构设计/ java-base-module/docs/项目架构评价与修改计划.md docs/superpowers/plans/2026-05-13-architecture-refactor-docs-plan.md
-git commit -m "docs(docs): 收敛架构重构文档基线"
+# java-base-module 子仓库：架构文档
+git -C java-base-module add docs/架构设计/ docs/项目架构评价与修改计划.md
+git -C java-base-module commit -m "docs(docs): 收敛架构重构文档基线"
+
+# 根仓库：本计划文档
+git add docs/superpowers/plans/2026-05-13-architecture-refactor-docs-plan.md
+git commit -m "docs(plan): 完成架构重构文档收敛计划"
 ```
 
 ---
