@@ -6,6 +6,7 @@ fn-devops/
 browser-input-assistant/
 
 .DS_Store
+.codex/config.toml
 
 # 但保留 Claude Code 配置
 !.claude/
