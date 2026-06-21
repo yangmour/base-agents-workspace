@@ -85,7 +85,6 @@ mvn -pl server/admin spring-boot:run -Drevision=1.0
   - Fallback 失败时应抛 `BizException`，不要伪造成功响应。
 - 分页统一使用 MyBatis-Plus `Page<T>`。请求参数通常为 `pageNum`、`pageSize`；响应字段使用 `records`、`current`、`size`、`total`，可选 `pages`。
 - Spring MVC 服务使用 `common/base-knife4j`；WebFlux/Gateway 服务使用 `common/base-knife4j-webflux`。不要在同一个服务里混用两套 Knife4j 模块。
-- 数据库相关改动必须同时考虑 MySQL、PostgreSQL、SQLite。脚本无法单文件兼容时，按方言拆分，并同步维护相关 README/CHANGELOG/rollback 文档。
 
 ### 后端本地开发环境
 
@@ -110,11 +109,9 @@ cd java-base-module/本地开发
 
 本地 Docker Compose 还会暴露 Nacos 的 `8080`、`9848`、`9849`；其中 `8080` 可能与 `api-gateway` 本地端口约定冲突，启动前确认端口占用或映射。
 
-数据库初始化脚本会读取各服务 `docs/数据库变更/db/` 目录下的 SQL 文件。默认初始化：
+数据库初始化脚本会读取各服务 `docs/数据库变更/` 目录下的 SQL 文件。默认初始化：
 
-- MySQL：`im`、`file_service`、`demo`
-- PostgreSQL：`auth_center`、`im`、`file_service`
-- `auth_center` 维护 MySQL、PostgreSQL、SQLite 三套脚本：`schema-auth-center-mysql.sql`、`schema-auth-center.sql`、`schema-auth-center-sqlite.sql`
+- 每个服务的 SQL 文件统一为 `schema.sql`（MySQL 主方言），变更日志为 `CHANGELOG.md`
 
 Nacos 配置导入脚本读取 `docs/yaml`，导入 `base.yaml` 与 `weixin-bot-server.yaml`。
 
