@@ -32,7 +32,7 @@
 - 一次验签返回类型化 Claim，消除“先 validate、再多次 parse”的重复解析。
 - 强制校验算法、Issuer、Audience、有效期和 Token 类型。
 - 删除未生效的 JWT 有效期配置，明确 `ClientType` 是唯一 Token 生命周期来源。
-- 清理当前完整 Refresh Token 和 Token 前缀日志。
+- 清理当前完整 Authorization Token、掩码 Token 和 Token 前缀日志。
 - 为密钥配置、签发、验签和调用方迁移建立自动化回归测试。
 
 ### 2.2 非目标
@@ -270,7 +270,8 @@ Refresh Token 当前仍可重复使用，哈希存储和一次性轮换作为下
 
 本批次必须删除：
 
-- 管理端刷新接口中的完整 Refresh Token 日志。
+- 认证中心内部验证接口中的完整 Authorization Token 日志。
+- 管理端登录相关接口中的掩码 Token 日志。
 - Token Service 和 Token Repository 中的 Token 前缀日志。
 
 ## 11. 测试设计
