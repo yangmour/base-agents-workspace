@@ -4,7 +4,7 @@
 
 **Goal:** 让 Gateway 对转发给 file `/inner/**` 的请求安全签名，并保留 `X-Inner: 1` 兼容标识。
 
-**Architecture:** Gateway 的入口过滤器先无条件删除客户端伪造的内部可信头。一个在路由 `StripPrefix` 之后运行的全局过滤器仅对改写后的 `/inner/**` 请求生成 HMAC 头和 `X-Inner: 1`；file 已有 WebFlux HMAC 验证过滤器，以 Redis nonce 提供跨 Pod 防重放。密钥只从部署配置注入，不写入仓库。
+**Architecture:** Gateway 的入口过滤器先无条件删除客户端伪造的内部可信头。一个在所有路由路径改写之后、Netty 网络转发之前运行的全局过滤器仅对最终 `/inner/**` 请求生成 HMAC 头和 `X-Inner: 1`；file 已有 WebFlux HMAC 验证过滤器，以 Redis nonce 提供跨 Pod 防重放。密钥只从部署配置注入，不写入仓库。
 
 **Tech Stack:** Java 21、Spring Boot 3.2、Spring Cloud Gateway 4.1、Reactor、JUnit 5、Mockito。
 
@@ -138,7 +138,7 @@ Expected: FAIL，因为过滤器尚不存在。
 
 - [ ] **Step 3: 最小实现**
 
-创建条件组件：`@ConditionalOnProperty(prefix = "internal-auth", name = "enabled", havingValue = "true")`。实现 `GlobalFilter, Ordered`，返回顺序 `1`：Spring Cloud Gateway 未指定 order 的 `StripPrefix` 路由过滤器顺序为 `0`，因此签名器看到改写后的路径，且仍早于 `RouteToRequestUrlFilter`（10000）。只在 `getURI().getRawPath().startsWith("/inner/")` 时构造 `rawPath + '?' + rawQuery`，清除再写入 `X-Inner` 和四个认证头；nonce 使用 UUID，时间使用 UTC。
+创建条件组件：`@ConditionalOnProperty(prefix = "internal-auth", name = "enabled", havingValue = "true")`。实现 `GlobalFilter, Ordered`，返回 `Ordered.LOWEST_PRECEDENCE - 1`：它位于 NettyRoutingFilter（`Ordered.LOWEST_PRECEDENCE`）之前，因此能看到任意 Nacos 路由过滤器完成后的最终路径，避免依赖 `StripPrefix` 在配置中的位置。只在 `getURI().getRawPath().startsWith("/inner/")` 时构造 `rawPath + '?' + rawQuery`，清除再写入 `X-Inner` 和四个认证头；nonce 使用 UUID，时间使用 UTC。
 
 - [ ] **Step 4: 验证通过**
 

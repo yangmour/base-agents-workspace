@@ -14,7 +14,7 @@ HMAC 密钥不提交到仓库。生产环境通过 Kubernetes Secret 或 Nacos �
 
 1. Gateway 的入口过滤器删除外部传入的 `X-User-*`、`X-Inner` 及全部 `X-Internal-*` 可信头。
 2. 路由过滤器（例如 `StripPrefix=2`）将 `/api/file/...` 改写为下游真实路径 `/inner/file/...`。
-3. Gateway 内部签名过滤器仅在改写后的路径以 `/inner/` 开头时运行：生成 UUID nonce 和 UTC 毫秒时间戳，写入 `X-Inner: 1`，并对 `METHOD + path?query + api-gateway + timestamp + nonce` 产生 HMAC-SHA-256 签名。
+3. Gateway 内部签名过滤器在所有路由路径改写完成、Netty 发起网络转发之前运行。它仅在改写后的路径以 `/inner/` 开头时运行：生成 UUID nonce 和 UTC 毫秒时间戳，写入 `X-Inner: 1`，并对 `METHOD + path?query + api-gateway + timestamp + nonce` 产生 HMAC-SHA-256 签名。
 4. file 的 WebFlux 过滤器验证签名、时钟窗口和 Redis nonce；签名无效返回 401，Redis 不可用时返回 503（fail closed）。
 
 `X-Inner: 1` 不参与签名验证，也不能单独放行请求。它仅为旧逻辑、日志和故障排查提供稳定标识。
