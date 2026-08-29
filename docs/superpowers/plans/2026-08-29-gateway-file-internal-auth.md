@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Gateway 服务身份固定由配置 `internal-auth.service-id` 提供，生产值为 `api-gateway`。
+- Gateway 服务身份固定由配置 `internal-auth.service-id` 提供，生产值为 `api-gateway`；`gateway.internal-signing.enabled` 默认关闭，不能在公网入口认证缺失时开启。
 - `internal-auth.secret` 只引用 Nacos 加密配置或 Kubernetes Secret，禁止写入 YAML、测试外的源码或日志。
 - `X-Inner: 1` 仅作兼容和审计标识，任何授权决定只接受有效 HMAC。
 - 外部输入的 `X-Inner` 和全部 `X-Internal-*` 必须先删除。
@@ -138,7 +138,7 @@ Expected: FAIL，因为过滤器尚不存在。
 
 - [ ] **Step 3: 最小实现**
 
-创建条件组件：`@ConditionalOnProperty(prefix = "internal-auth", name = "enabled", havingValue = "true")`。实现 `GlobalFilter, Ordered`，返回 `Ordered.LOWEST_PRECEDENCE - 1`：它位于 NettyRoutingFilter（`Ordered.LOWEST_PRECEDENCE`）之前，因此能看到任意 Nacos 路由过滤器完成后的最终路径，避免依赖 `StripPrefix` 在配置中的位置。只在 `getURI().getRawPath().startsWith("/inner/")` 时构造 `rawPath + '?' + rawQuery`，清除再写入 `X-Inner` 和四个认证头；nonce 使用 UUID，时间使用 UTC。
+创建条件组件：类级 `@ConditionalOnProperty(prefix = "internal-auth", name = "enabled", havingValue = "true")`，Bean 级 `@ConditionalOnProperty(prefix = "gateway.internal-signing", name = "enabled", havingValue = "true")`。实现 `GlobalFilter, Ordered`，返回 `Ordered.LOWEST_PRECEDENCE - 1`：它位于 NettyRoutingFilter（`Ordered.LOWEST_PRECEDENCE`）之前，因此能看到任意 Nacos 路由过滤器完成后的最终路径，避免依赖 `StripPrefix` 在配置中的位置。只在 `getURI().getRawPath().startsWith("/inner/")` 时构造 `rawPath + '?' + rawQuery`，清除再写入 `X-Inner` 和四个认证头；nonce 使用 UUID，时间使用 UTC。只有入口已完成用户认证和授权或网络入口仅受信时才可开启该 Bean。
 
 - [ ] **Step 4: 验证通过**
 

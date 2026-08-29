@@ -10,7 +10,7 @@
 
 HMAC 密钥不提交到仓库。生产环境通过 Kubernetes Secret 或 Nacos 加密配置为 Gateway 和 file 注入相同值；所有 Pod 使用 Redis 的原子 nonce 保留记录，确保任一签名请求只能被整个集群接受一次。
 
-## 请求流
+## 请求流与入口边界
 
 1. Gateway 的入口过滤器删除外部传入的 `X-User-*`、`X-Inner` 及全部 `X-Internal-*` 可信头。
 2. 路由过滤器（例如 `StripPrefix=2`）将 `/api/file/...` 改写为下游真实路径 `/inner/file/...`。
@@ -19,9 +19,11 @@ HMAC 密钥不提交到仓库。生产环境通过 Kubernetes Secret 或 Nacos �
 
 `X-Inner: 1` 不参与签名验证，也不能单独放行请求。它仅为旧逻辑、日志和故障排查提供稳定标识。
 
+Gateway 是公网入口时，不能因路径成为 `/inner/**` 就自动签名：例如 `/api/file/inner/file/**` 经 `StripPrefix=2` 会变为 `/inner/file/**`，自动签名会把外部客户端提升成内部调用方。因此 Gateway 签名另由 `gateway.internal-signing.enabled=true` 显式开关保护，默认关闭；只有在该路由已由 Gateway 完成外部用户认证和授权、或入口在网络上确实只允许受信服务时才能开启。没有此前提时，文件服务内部 API 应由 Nacos/Feign 直接调用，Gateway 不参与签名。
+
 ## 配置与上线
 
-Gateway 与 file 都启用：
+Gateway 和 file 的 HMAC 基础配置：
 
 ```yaml
 internal-auth:
@@ -31,7 +33,7 @@ internal-auth:
   max-clock-skew: 5m
 ```
 
-配置中的 `secret` 只引用部署环境变量或密钥管理系统。先在预发布环境验证 Gateway 的 `/api/file/**` 路由，再启用生产 file Pod 校验；避免先启用 file 校验、后部署 Gateway 签名造成 401。
+配置中的 `secret` 只引用部署环境变量或密钥管理系统。`gateway.internal-signing.enabled` 必须保持缺省/`false`，直到 Gateway 的外部用户认证与路由授权已经实现；避免把公网入口转换成内部身份。
 
 ## 错误、安全与性能
 
