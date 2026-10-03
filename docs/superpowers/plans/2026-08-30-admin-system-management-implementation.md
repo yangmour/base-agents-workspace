@@ -1,5 +1,7 @@
 # 平台基础与系统管理域 Implementation Plan
 
+> **历史计划，2026-10-03 已明确替代边界：** 下文的后台 auth-center 依赖、前端目标与部分实施步骤已被后续实现替代，未勾选项不代表当前功能尚无代码。正式目标为后台独立认证的 `server/admin + base-admin-web`；请先阅读[当前目标与验收计划](2026-10-03-admin-platform-goals.md)，按现状补齐真实验收与缺口，不照搬旧认证链。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 在 `server/admin` 和 `weixin-bot-admin` 中交付租户、套餐、部门、岗位、管理用户资料、角色、菜单/按钮、数据权限及动态管理端的首个完整纵向切片。

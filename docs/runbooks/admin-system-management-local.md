@@ -1,5 +1,7 @@
 # 如何在本地联调系统管理并运行浏览器冒烟
 
+> **历史手册，2026-10-03 已标记过期：** 下文仍使用 `weixin-bot-admin`、旧后台认证链及部分旧端口/测试命令，不应作为当前启动步骤直接执行。正式前端为 `base-admin-web`，后台由 admin 独立认证；请以[当前目标与验收计划](../superpowers/plans/2026-10-03-admin-platform-goals.md)、正式前端 README 和 `java-base-module/本地开发/dev.sh` 为准。完整手册重写与可重复真实冒烟属于 G0 验收。
+
 本手册启动系统管理所需的本地中间件、`auth-center`、`admin`、`api-gateway` 和 `weixin-bot-admin`，并说明如何执行真实 Gateway 链路的 Playwright 冒烟。所有命令都从工作区根目录 `/Users/mia/Desktop/dev/code/case` 开始。
 
 ## 1. 前置条件
