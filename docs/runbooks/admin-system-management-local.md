@@ -1,4 +1,4 @@
-# 本地管理平台启动与 G0 浏览器冒烟
+# 本地管理平台启动与 G0/G1 浏览器验收
 
 > 2026-10-03 文档口径修正。正式后端是 `java-base-module/server/admin`，前端是 `node-base-module/base-admin-web`。本文步骤不代表全部已执行通过；结果见[目标计划](../superpowers/plans/2026-10-03-admin-platform-goals.md)及[进度记录](../../java-base-module/docs/admin-system-progress.md)。此前使用 `weixin-bot-admin`、后台 OAuth fixture 和旧端口的步骤已被替代；历史执行证据仍保留在进度记录中。
 
@@ -64,6 +64,8 @@ bash 本地开发/dev.sh web
 
 `java start admin` 会检查中间件、按需启动缺少的容器、同步 Nacos 配置、准备 admin 数据库、安装根 POM 和公共模块、构建 admin，然后启动应用。先安装根 POM 能避免旧本地依赖管理造成 JAR 缺少新公共模块的传递依赖。**Nacos 同名 Data ID 会被覆盖**，`docs/yaml/base-local.yaml` 发布为 `base.yaml`；这不是只读命令，也不是只补缺失配置。默认目标为本地 namespace `ee5e806f-803e-46f3-9f43-fe6d1e87eed5`、group `DEFAULT_GROUP`。共享配置环境应先核对目标和内容。
 
+在会回收命令后代进程的 Codex 执行会话中，本轮改用 `DEV_FOLLOW_LOGS=1` 保持运行会话；`DEV_FOLLOW_LOGS=0` 返回后曾出现 admin 进程消失。无论使用何种终端，启动完成后都需重新请求管理端健康检查，不能只信端口短暂监听。
+
 admin 启动时由 Flyway 应用尚未执行的 `server/admin/src/main/resources/db/migration` 迁移。不要手工重复导入这些 SQL，也不要运行不存在的 `init-database.sh`。发现业务端口已监听时，`java start admin` 会跳过构建和启动，仍需核对运行版本与健康状态。
 
 前端 `web` 会在缺少 `node_modules` 时安装依赖。日志分别为 `/tmp/java-base-module/admin.log` 和 `/tmp/admin-web.log`。检查：
@@ -107,11 +109,11 @@ npx playwright install chromium
 set -a
 . ../../java-base-module/本地开发/.env.admin-e2e
 set +a
-npm run test:e2e
+npm run test:e2e -- e2e/admin-smoke.spec.ts
 # test-results 会被下次运行替换，需要保留证据时先复制到忽略目录：
 mkdir -p playwright-report/g0-run-1
 cp -R test-results/. playwright-report/g0-run-1/
-npm run test:e2e
+npm run test:e2e -- e2e/admin-smoke.spec.ts
 mkdir -p playwright-report/g0-run-2
 cp -R test-results/. playwright-report/g0-run-2/
 ```
@@ -139,7 +141,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-access-smoke.py
 
 它固定使用本机 admin 和默认私有夹具文件，报告不保存敏感请求/响应；当前通过结论为 25 个检查、清理无失败。夹具用户列表按该批次标识筛选并逐行核对完整 ID 集合，不能代替所有用户或所有数据权限类型的完整隔离验收。
 
-冒烟通过界面删除（软删）测试用户；清理 fixture 使用独立的 45 秒预算，先关闭页面以防自动错误快照记录密码，再通过独立会话按唯一用户名精确清理。清理开始前先保存不含秘密的恢复标识，失败或清理超时均使测试失败。持久夹具账号保留，便于重复浏览器验收。整批验收结束且不再复用时才执行：
+冒烟通过界面删除（软删）测试用户；清理 fixture 使用独立的 90 秒预算，先关闭页面以防自动错误快照记录密码，再通过独立会话按唯一用户名精确清理。清理开始前先保存不含秘密的恢复标识，失败或清理超时均使测试失败。持久夹具账号保留，便于重复浏览器验收。整批验收结束且不再复用时才执行：
 
 ```bash
 cd /Users/mia/Desktop/dev/code/case/java-base-module
@@ -148,7 +150,37 @@ python3 本地开发/tests/admin-e2e-fixture.py cleanup
 
 cleanup 精确禁用该夹具的租户、套餐、角色和账号，并撤销对应租户会话，保留身份、关系及审计日志；不会删除原有业务数据。退役后 prepare 拒绝重新激活。新批次使用 `prepare --env-file 本地开发/.env.admin-e2e-<suffix>`，后续 status/cleanup 及前端加载使用同一文件。
 
-## 7. 回归与按需停止
+## 7. G1 组织、岗位及用户归属验收
+
+保留上述默认夹具，启动最新 admin 后，先跑接口边界，再跑正式页面。接口脚本会创建、修改并精确清理本轮对象，不改种子账号或已有菜单：
+
+```bash
+cd /Users/mia/Desktop/dev/code/case/java-base-module
+PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-organization-smoke.py
+PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-organization-smoke.py
+```
+
+每轮报告位于 `target/admin-organization-smoke/<runId>/report.json`，记录 HTTP/RI、版本、引用保护、事务回滚及清理结果。覆盖部门移动/循环/负责人、岗位分配/幂等、用户权限版本和双租户反向边界；断言失败或清理失败都返回非零。中断后的精确恢复命令和测试见[接口验收说明](../../java-base-module/本地开发/tests/admin-organization-smoke.md)。
+
+在已经加载同一私有 dotenv 的前端 Shell 中执行两轮：
+
+```bash
+cd /Users/mia/Desktop/dev/code/case/node-base-module/base-admin-web
+npm run test:e2e -- e2e/admin-organization.spec.ts
+mkdir -p playwright-report/g1-organization-run-1
+cp -R test-results/. playwright-report/g1-organization-run-1/
+npm run test:e2e -- e2e/admin-organization.spec.ts
+mkdir -p playwright-report/g1-organization-run-2
+cp -R test-results/. playwright-report/g1-organization-run-2/
+# 验证共享布局和清理改动没有破坏 G0：
+npm run test:e2e -- e2e/admin-smoke.spec.ts
+```
+
+G1 使用 `E2E_ADMIN_*` 及 `E2E_LIMITED_*`。管理员通过页面完成部门根/子/孙创建、子树移动、岗位启停筛选、用户归属及岗位分配/撤销/删除；同时检查 390px 布局、断网保留数据与恢复。受限账号检查组织菜单与用户写操作入口隐藏；未安装的组织路由显示当前路由契约的 404，直接 API 拒绝由接口套件验证为 403。
+
+两套浏览器用例均不模拟业务响应；关闭 trace/video，失败截图屏蔽密码。组织套件用独立 90 秒清理预算，先写精确身份清单，再回查和删除本轮资源，任何清理失败都令用例失败。套件通过只表示本批组织/岗位闭环，完整角色菜单、五种数据范围、负责人被后续删除时的策略及多 Pod 仍需后续验收。
+
+## 8. 回归与按需停止
 
 ```bash
 cd /Users/mia/Desktop/dev/code/case/node-base-module/base-admin-web
