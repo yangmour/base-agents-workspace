@@ -83,9 +83,11 @@
 
 **交付结果：** 管理员能配置组织和权限，受限用户只能看到并操作被授权的数据；auth-center 的故障不影响后台独立认证链。
 
-组织/岗位与用户分配首批已按[专项计划](../../../java-base-module/docs/superpowers/plans/2026-10-03-admin-g1-organization.md)完成单实例真实页面与双租户 HTTP 验收。下一独立块推进角色授权、菜单/按钮与五种数据范围，再处理租户及审计。
+组织/岗位与用户分配首批已按[专项计划](../../../java-base-module/docs/superpowers/plans/2026-10-03-admin-g1-organization.md)完成单实例真实页面与双租户 HTTP 验收；第二批按[角色与数据范围计划](../../../java-base-module/docs/superpowers/plans/2026-10-03-admin-g1-role-scope.md)推进角色授权与五范围。后续为共享菜单/按钮 CRUD、受限套餐授权选项、租户及审计。
 
-**2026-10-03 首批结果：** 两轮 HTTP 各 512 项通过，两轮浏览器各 2 用例/12 步骤/60 组 HTTP/RI，G0 回归通过；所有临时资源精确清理，页面异常 0。后端 289 项、前端 173 项测试及类型/构建通过。修复用户部分更新覆盖认证字段、负责人越租户引用及锁序、根部门误移动确认和窄屏溢出。提交为 Java `56aed7dc`、`a2a5114a`、`f3c071a1` 与 Node `96a9798`；详细证据见[进度记录](../../../java-base-module/docs/admin-system-progress.md)。部门移动后的五种数据范围仍留到下一批，所以下列完整目标继续保留未勾选状态。
+**2026-10-03 首批结果：** 两轮 HTTP 各 512 项通过，两轮浏览器各 2 用例/12 步骤/60 组 HTTP/RI，G0 回归通过；所有临时资源精确清理，页面异常 0。后端 289 项、前端 173 项测试及类型/构建通过。修复用户部分更新覆盖认证字段、负责人越租户引用及锁序、根部门误移动确认和窄屏溢出。提交为 Java `56aed7dc`、`a2a5114a`、`f3c071a1` 与 Node `96a9798`；详细证据见[进度记录](../../../java-base-module/docs/admin-system-progress.md)。首批未验证部门移动后的五种数据范围，第二批补齐用户读写路径；下列完整目标包含尚未覆盖部分，继续保留未勾选状态。
+
+**2026-10-03 第二批结果：** 角色写入/平台保留编码修复 `6563c496`，分配与角色更新锁序修复 `862b79e2`，HTTP 套件 `8ba679e2`，前端 `node-base-module@ab9b72e`。空 CUSTOM 保留本人、描述 null 清空、旧版本 409 均已真实回归。双租户五范围用户读写两轮各 914 项通过，12 项恢复保护/真实恢复通过；后端 302 项、前端 187 项、类型/构建通过。正式角色浏览器两轮各 100 组 HTTP/RI、11 张截图，原 Token 撤权立即 403，纯定时按钮/页面收敛实测 16.984–17.121 秒（25 秒验收上界）；无焦点/可见性切换、页面异常 0、清理完成。G0/组织 3 用例回归通过。完整菜单 CRUD、套餐外候选过滤、导出、审计及真实多 Pod 等仍未覆盖，不勾选完整 G1。命令与证据见[本地手册](../../runbooks/admin-system-management-local.md)和[进度记录](../../../java-base-module/docs/admin-system-progress.md)。
 
 - [ ] 用户管理：分页查询、筛选、创建、编辑、启停、删除、密码相关操作、角色和岗位分配；覆盖重复账号、非法状态和失败回滚。
 - [ ] 部门/岗位：树形展示、创建/编辑/删除、部门移动、岗位分配；校验循环引用、被引用删除及部门变更后的数据范围。
@@ -198,7 +200,7 @@ npm run type-check
 npm run build
 ```
 
-现有文件 HTTP 冒烟入口为 `java-base-module/本地开发/tests/admin-file-smoke.sh`；依赖 `E2E_ADMIN_*` 与 `E2E_ADMIN_B_*` 两组环境变量。它会创建/删除测试文件，必须指向专用验收环境。真实浏览器 E2E 已提供 `npm run test:e2e -- e2e/admin-smoke.spec.ts` 与 `npm run test:e2e -- e2e/admin-organization.spec.ts`；账号准备及结果保存见本地手册。真实多 Pod 脚本仍待落地，不以这些单实例用例替代。
+现有文件 HTTP 冒烟入口为 `java-base-module/本地开发/tests/admin-file-smoke.sh`；依赖 `E2E_ADMIN_*` 与 `E2E_ADMIN_B_*` 两组环境变量。它会创建/删除测试文件，必须指向专用验收环境。真实浏览器 E2E 已提供 `npm run test:e2e -- e2e/admin-smoke.spec.ts`、`npm run test:e2e -- e2e/admin-organization.spec.ts` 与 `npm run test:e2e -- e2e/admin-role-scope.spec.ts`；账号准备及结果保存见本地手册。真实多 Pod 脚本仍待落地，不以这些单实例用例替代。
 
 ## 5. 每部分功能的完成标准与提交规则
 

@@ -180,7 +180,37 @@ G1 使用 `E2E_ADMIN_*` 及 `E2E_LIMITED_*`。管理员通过页面完成部门�
 
 两套浏览器用例均不模拟业务响应；关闭 trace/video，失败截图屏蔽密码。组织套件用独立 90 秒清理预算，先写精确身份清单，再回查和删除本轮资源，任何清理失败都令用例失败。套件通过只表示本批组织/岗位闭环，完整角色菜单、五种数据范围、负责人被后续删除时的策略及多 Pod 仍需后续验收。
 
-## 8. 回归与按需停止
+## 8. G1 角色授权与五种数据范围验收
+
+继续使用默认双租户私有夹具和当前 admin。共享菜单只读复用，所有角色、用户及部门均为本轮临时对象：
+
+```bash
+cd /Users/mia/Desktop/dev/code/case/java-base-module
+PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-role-scope-smoke.py
+PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-role-scope-smoke.py
+ADMIN_ROLE_SCOPE_RUN_HTTP_TESTS=1 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s 本地开发/tests -p test_admin_role_scope_smoke.py -v
+```
+
+每轮正式 HTTP 有 914 项检查，覆盖五范围下的用户列表/详情/创建/编辑/启停/删除/角色岗位分配、空自定义范围、多角色并集、子树移出移回、原 Token 撤权恢复、版本冲突、幂等及跨租户拒绝。五种范围均保留本人基线；空 CUSTOM_DEPT 表示无额外部门。报告保存到 `target/admin-role-scope-smoke/<runId>/report.json`；中断后使用 `--cleanup <runId>` 仅恢复该轮精确身份的清理。详细命令和保护规则见[角色接口验收说明](../../java-base-module/本地开发/tests/admin-role-scope-smoke.md)。
+
+在第 6 节已加载私有 dotenv 的前端 Shell 中执行：
+
+```bash
+cd /Users/mia/Desktop/dev/code/case/node-base-module/base-admin-web
+npm run test:e2e -- e2e/admin-role-scope.spec.ts
+mkdir -p playwright-report/g1-role-scope-run-1
+cp -R test-results/. playwright-report/g1-role-scope-run-1/
+npm run test:e2e -- e2e/admin-role-scope.spec.ts
+mkdir -p playwright-report/g1-role-scope-run-2
+cp -R test-results/. playwright-report/g1-role-scope-run-2/
+npm run test:e2e -- e2e/admin-smoke.spec.ts e2e/admin-organization.spec.ts
+```
+
+角色套件通过页面创建/编辑/清空描述、精确菜单集合与五范围保存重开、用户角色分配和停用移除，检查真实 409 冲突恢复、390px 布局及网络失败恢复。临时用户独立上下文验证 assign-only/update-only 的按钮和真实 API 边界；撤回按钮/页面权限后原 Token 立即 403、身份仍有效，页面原地等待真实轮询收敛。轮询等待断言上界为 25 秒（含请求和浏览器调度），每轮 `requests.json` 记录实际时间，不把该上界误写为生产 SLA。
+
+本批不写共享菜单，不代表菜单 CRUD、真实受限套餐的选项过滤或多 Pod 已验收。浏览器关闭 trace/video，失败截图屏蔽密码；测试有独立 90 秒清理预算，第二上下文先关闭，按本轮身份与 ID 删除临时资源并退出会话。
+
+## 9. 回归与按需停止
 
 ```bash
 cd /Users/mia/Desktop/dev/code/case/node-base-module/base-admin-web
