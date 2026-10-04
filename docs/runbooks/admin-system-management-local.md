@@ -234,7 +234,30 @@ HTTP 运行标识为 `d18e832b779d`、`9c793b9d48b9`，每轮 43 checks passed �
 覆盖平台管理员菜单目录/页面/按钮创建编辑删除、循环保护、B 租户套餐候选精确集合、角色授权树集合及非平台管理员菜单写控件隐藏。清理按本轮精确 ID 和身份恢复套餐/角色关系并删除临时菜单。该证据仅完成单实例双租户菜单范围；日志、在线用户、多 Pod、基础设施、客户端 SSO 与其他业务域继续保持未完成。
 浏览器关闭 trace/video，失败截图屏蔽密码；测试有独立 90 秒清理预算，第二上下文先关闭，按本轮身份与 ID 删除临时资源并退出会话。
 
-## 9. 回归与按需停止
+## 9. G1 审计与在线会话跨租户验收
+
+使用独立后缀夹具加载 A/B 两个租户，先执行 HTTP，再执行真实页面；不把凭据写入命令参数或报告：
+
+```bash
+cd /Users/mia/Desktop/dev/code/case/java-base-module
+PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-system-audit-smoke.py \
+  --env-file 本地开发/.env.admin-e2e-platform-audit
+
+cd /Users/mia/Desktop/dev/code/case/node-base-module/base-admin-web
+set -a; . /Users/mia/Desktop/dev/code/case/java-base-module/本地开发/.env.admin-e2e-platform-audit; set +a
+npm run test:e2e -- e2e/admin-system-audit.spec.ts
+mkdir -p playwright-report/g1-audit-boundary-run-1
+cp -R test-results/. playwright-report/g1-audit-boundary-run-1/
+npm run test:e2e -- e2e/admin-system-audit.spec.ts
+mkdir -p playwright-report/g1-audit-boundary-run-2
+cp -R test-results/. playwright-report/g1-audit-boundary-run-2/
+```
+
+HTTP 运行 `3b0da4f52a1d`、`da06c9564d43` 各 52 项通过且无清理错误；浏览器两轮各 1 passed。A 完成租户创建/编辑/删除、登录日志和操作日志筛选及在线会话读取；B 三个审计接口返回 200 且看不到 A 的临时租户名、编辑名和 sessionId，B 跨租户强退 A 会话返回 4xx，A 会话仍有效，A/B 页面异常均为 0。HTTP 还验证日志 ID、在线会话 ID 不跨租户交叉，以及 B 清理自己的第二会话后旧令牌 401。
+
+该条只完成单实例双租户的租户、日志和在线会话边界。多 Pod 会话一致性、故障恢复、性能压测、基础设施、客户端 SSO 和业务域仍待后续验收。
+
+## 10. 回归与按需停止
 
 ```bash
 cd /Users/mia/Desktop/dev/code/case/node-base-module/base-admin-web
