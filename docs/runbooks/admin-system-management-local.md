@@ -208,7 +208,31 @@ npm run test:e2e -- e2e/admin-smoke.spec.ts e2e/admin-organization.spec.ts
 
 角色套件通过页面创建/编辑/清空描述、精确菜单集合与五范围保存重开、用户角色分配和停用移除，检查真实 409 冲突恢复、390px 布局及网络失败恢复。临时用户独立上下文验证 assign-only/update-only 的按钮和真实 API 边界；撤回按钮/页面权限后原 Token 立即 403、身份仍有效，页面原地等待真实轮询收敛。轮询等待断言上界为 25 秒（含请求和浏览器调度），每轮 `requests.json` 记录实际时间，不把该上界误写为生产 SLA。
 
-本批不写共享菜单，不代表菜单 CRUD、真实受限套餐的选项过滤或多 Pod 已验收。浏览器关闭 trace/video，失败截图屏蔽密码；测试有独立 90 秒清理预算，第二上下文先关闭，按本轮身份与 ID 删除临时资源并退出会话。
+本批已完成单实例双租户菜单目录 CRUD、循环保护、平台管理员写入门禁和 B 租户套餐候选过滤；不代表日志、在线用户、多 Pod、基础设施、客户端 SSO 或其他业务域已验收。
+
+## 8. G1 菜单目录与套餐候选验收
+
+加载专用平台夹具环境后，先运行两轮 HTTP 烟测，再运行两组浏览器用例；命令不把凭据写入参数或报告：
+
+```bash
+cd /Users/mia/Desktop/dev/code/case/java-base-module
+set -a; . 本地开发/.env.admin-e2e-platform; set +a
+PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-menu-catalog-smoke.py
+PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-menu-catalog-smoke.py
+
+cd /Users/mia/Desktop/dev/code/case/node-base-module/base-admin-web
+npm run test:e2e -- e2e/admin-menu-catalog.spec.ts e2e/admin-menu-package-scope.spec.ts
+mkdir -p playwright-report/g1-menu-run-1
+cp -R test-results/. playwright-report/g1-menu-run-1/
+npm run test:e2e -- e2e/admin-menu-catalog.spec.ts e2e/admin-menu-package-scope.spec.ts
+mkdir -p playwright-report/g1-menu-run-2
+cp -R test-results/. playwright-report/g1-menu-run-2/
+```
+
+HTTP 运行标识为 `d18e832b779d`、`9c793b9d48b9`，每轮 43 checks passed 且 `cleanupErrors=0`。浏览器报告目录为 `/Users/mia/Desktop/dev/code/case/node-base-module/base-admin-web/playwright-report/g1-menu-run-1/2` 与 `g1-menu-package-run-3/4`；两个用例各两轮通过。前端回归 `npm test`（37 files、230 tests）、`npm run type-check`、`npm run build` 均通过。
+
+覆盖平台管理员菜单目录/页面/按钮创建编辑删除、循环保护、B 租户套餐候选精确集合、角色授权树集合及非平台管理员菜单写控件隐藏。清理按本轮精确 ID 和身份恢复套餐/角色关系并删除临时菜单。该证据仅完成单实例双租户菜单范围；日志、在线用户、多 Pod、基础设施、客户端 SSO 与其他业务域继续保持未完成。
+浏览器关闭 trace/video，失败截图屏蔽密码；测试有独立 90 秒清理预算，第二上下文先关闭，按本轮身份与 ID 删除临时资源并退出会话。
 
 ## 9. 回归与按需停止
 
