@@ -148,7 +148,7 @@
 - Consumes: the committed menu directory contract from Task 1, `GET /system/roles/menu-options`, tenant/package CRUD, and existing role assignment endpoints.
 - Produces: candidate IDs equal to the current enabled package menu set; cross-tenant reads/writes and forged tenant headers rejected; permission changes visible on both pods within the measured convergence bound.
 
-- [ ] **Step 1: Run the focused Java tenant/role tests.**
+- [x] **Step 1: Run the focused Java tenant/role tests.**
 
   ```bash
   cd java-base-module
@@ -157,7 +157,9 @@
 
   Expected: current tests pass. Capture any failure involving disabled menus, package references, version conflicts, or tenant context as the next test target.
 
-- [ ] **Step 2: Add a failing exact-set test for candidate filtering.**
+  实际结果：首次运行发现 `TenantPackageConcurrencyMySqlTest` 的 Mockito 替身没有实现新增的目录锁，稳定触发 `MENU_CATALOG_LOCK_MISSING`；没有进入套餐并发 SQL。补齐同事务 `SELECT ... FOR UPDATE` 后，`TenantApiIntegrationTest` 24 项、`TenantPackageConcurrencyMySqlTest` 1 项、`TenantPermissionVersionIntegrationTest` 8 项、`RoleMenuOptionsIntegrationTest` 5 项全部通过（合计 38 项）。
+
+- [x] **Step 2: Add a failing exact-set test for candidate filtering.**
 
   The test must build a package containing one enabled directory/page/button and one disabled menu, call `RoleMenuOptionsService`, and assert:
 
@@ -168,15 +170,21 @@
 
   Also assert that submitting an ID outside the candidate set returns the existing validation code and leaves the previous package menu set unchanged.
 
-- [ ] **Step 3: Implement candidate and tenant isolation corrections.**
+  实际结果：既有 `RoleMenuOptionsIntegrationTest` 已覆盖启用目录/页面/按钮、停用菜单、套餐外菜单、存在祖先补全和非法替换回滚；`roleAssignPermissionAloneReadsOnlyEntitledChoicesWithDisabledStructuralAncestors` 精确断言候选 ID 集合，`structuralAncestorAndRealForeignPackageMenuAreRejectedWithoutReplacingLinks` 断言越界写入后原集合不变。本轮未重复添加同义测试。
+
+- [x] **Step 3: Implement candidate and tenant isolation corrections.**
 
   Keep the validation and replacement in one transaction, enforce the 200-menu limit before mutation, use the trusted tenant context for tenant-scoped reads, and invalidate affected permission versions after commit. Add Chinese comments for the reason platform-shared menu rows are filtered before tenant role assignment.
 
-- [ ] **Step 4: Add frontend failure-state coverage.**
+  实际结果：运行时代码已经满足事务、200 项上限、可信租户上下文和权限版本失效要求；本轮只修复并发验收替身，使其真正执行目录锁 SQL，不改变生产逻辑。候选服务中的平台共享菜单过滤中文注释已保留。
+
+- [x] **Step 4: Add frontend failure-state coverage.**
 
   Assert that `MenuGrantTree.vue` keeps the existing selection when the save returns 409/403 or network failure, shows a retryable message, and never silently truncates more than 200 IDs. Assert that the tenant table retains loaded rows after a failed reload.
 
-- [ ] **Step 5: Run two-tenant HTTP and browser acceptance.**
+  实际结果：现有 `tests/views/tenant.spec.ts`、`tests/views/menu-grants.spec.ts` 和 `MenuGrantTree.vue` 已覆盖 409/网络失败保留入口、重试提示、200 项限制与取消/迟到响应保护；套餐列表失败时保留已加载行并显示 `role=alert`。
+
+- [x] **Step 5: Run two-tenant HTTP and browser acceptance.**
 
   ```bash
   cd java-base-module
@@ -188,7 +196,9 @@
 
   Expected: A/B fixture users can only see their package candidate IDs; B cannot create platform menus; forged tenant headers and cross-tenant role/package writes return 4xx; cleanup restores original role/package sets and removes all run-prefixed resources.
 
-- [ ] **Step 6: Run regression and commit only this slice.**
+  实际结果：平台菜单 HTTP 烟测 `18b2178718ba` 为 43 checks passed、`cleanupErrors=[]`；双租户角色/数据范围烟测 `563ed956b741` 为 914 checks passed、`cleanupErrors=[]`；`admin-menu-package-scope.spec.ts` 为 1 passed（2.4 秒）。两租户候选集合、伪造租户头、套餐外菜单和跨租户写入均按 4xx/不变契约通过。权限跨 Pod 收敛时间留到 Task 4 的真实双 Pod 验收，不在单实例本切片虚报。
+
+- [x] **Step 6: Run regression and commit only this slice.**
 
   ```bash
   cd node-base-module/base-admin-web
@@ -217,6 +227,8 @@
   ```
 
   Update the progress record with the two-tenant matrix and measured permission convergence time.
+
+  实际结果：`base-admin-web` `npm test` 为 39 个文件/242 项通过，`npm run type-check` 和 `npm run build` 通过；JDK 21 下上述定向 Java 38 项通过。直接运行 admin 全量 369 项暴露已有工作区基线/迁移契约不一致（`sys_admin_user.username`、`sys_menu_catalog_lock`、可观测性变量等，共 5 failures/62 errors），未归因于本切片；双 Pod 收敛和故障恢复按后续 Task 4 验收。
 
 ### Task 3: 审计日志与在线用户切片
 
