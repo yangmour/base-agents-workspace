@@ -43,17 +43,17 @@
 - Consumes: `GET /admin-api/system/menus/tree`, `GET /admin-api/system/menus/current`, `POST/PUT/DELETE /admin-api/system/menus` and the existing `PermissionVersionService` invalidation.
 - Produces: a stable directory/page/button contract in which page `componentKey` is one of the explicit frontend registry keys, button nodes have no route fields, and stale versions return `409/ADMIN_VERSION_CONFLICT`.
 
-- [ ] **Step 1: Run the focused Java tests before editing.**
+- [x] **Step 1: Run the focused Java tests before editing.**
 
   Run from `java-base-module`:
 
   ```bash
-  mvn -pl server/admin -am -Drevision=1.0 -Dtest=MenuManagementControllerTest,MenuCatalogIntegrityIntegrationTest,MenuCatalogConcurrencyIntegrationTest,MenuApplicationServiceBoundaryTest test
+  mvn -pl server/admin -am -Drevision=1.0 -Dtest=MenuManagementControllerTest,MenuCatalogIntegrityIntegrationTest,MenuCatalogConcurrencyIntegrationTest,MenuApplicationServiceBoundaryTest -Dsurefire.failIfNoSpecifiedTests=false test
   ```
 
   Expected: all selected tests pass. If a test fails, record the first failing assertion and do not broaden the change until its contract is understood.
 
-- [ ] **Step 2: Add or tighten a failing boundary assertion for the first observed gap.**
+- [x] **Step 2: Add or tighten a failing boundary assertion for the first observed gap.**
 
   Keep the assertion at the existing test seam. The required shape is:
 
@@ -67,15 +67,19 @@
 
   The test must assert the exact business code/message and the unchanged row, not only a thrown exception.
 
-- [ ] **Step 3: Implement the smallest backend correction with Chinese boundary comments.**
+- [x] **Step 3: Implement the smallest backend correction with Chinese boundary comments.**
 
   Keep directory locking before parent/child validation, use full-field updates so explicit `null` clears stale route values, and call `permissionVersionService.bumpAllUsers()` after a successful update that can change the current route or button set. Do not add a second permission cache or accept a client `tenantId`.
 
-- [ ] **Step 4: Add or tighten the matching frontend contract test.**
+  实际结果：运行时代码已满足这些约束，本轮没有改动 Java/Vue 业务实现；真实缺口是烟测把历史失效关系与有效候选错误地要求为完全相等，修复范围收敛到 Python 验收算法。
+
+- [x] **Step 4: Add or tighten the matching frontend contract test.**
 
   The test must cover `MenuForm` type switching, clear route fields for `BUTTON`, and render the existing `data-test="create-menu"`/`edit-menu-*`/`delete-menu-*` controls only when the permission store allows them. Use the existing `src/views/system/role/menu-access.test.ts` patterns and keep identifiers as strings.
 
-- [ ] **Step 5: Run the real HTTP and browser slice.**
+  实际结果：既有菜单表单与按钮权限测试已通过，本轮未发现前端运行时代码缺口。
+
+- [x] **Step 5: Run the real HTTP and browser slice.**
 
   Ensure the admin and Vite services are running, load the dedicated platform fixture, then run:
 
@@ -88,13 +92,15 @@
 
   Expected: the Python report status is `passed`; Playwright reports no `pageerror`, creates/edits/deletes only the run-prefixed menu, and cleans it up. If the backend is unavailable, report the environment blocker instead of treating skipped real tests as success.
 
-- [ ] **Step 6: Run the slice regression and commit only this slice.**
+  实际结果：HTTP 运行 `8a3406ce` 为 43 checks passed、`cleanupErrors=[]`；Playwright 菜单目录与套餐候选 2 tests passed、6.1 秒、无 pageerror。
+
+- [x] **Step 6: Run the slice regression and commit only this slice.**
 
   ```bash
   cd node-base-module/base-admin-web
   npm test && npm run type-check && npm run build
   cd ../../java-base-module
-  mvn -pl server/admin -am -Drevision=1.0 test
+  mvn -pl server/admin -am -Drevision=1.0 -Dsurefire.failIfNoSpecifiedTests=false test
   git add \
     java-base-module/server/admin/src/main/java/com/xiwen/server/admin/permission/application/MenuApplicationService.java \
     java-base-module/server/admin/src/main/java/com/xiwen/server/admin/permission/api/MenuManagementController.java \
@@ -115,6 +121,8 @@
   ```
 
   Record the commit hash and actual HTTP/browser evidence in `java-base-module/docs/admin-system-progress.md` and the local runbook before staging the documentation.
+
+  实际结果：Java 提交 `5a044238` 只包含烟测算法、单测和进度记录；前端 Vitest 39 个文件/242 项通过，菜单 Java 定向回归 35 项通过。用 JDK 26 运行完整 reactor 会在公共 `base-basic` 的 Byte Buddy 兼容性上失败；改用 JDK 21 后公共 `base-security` 的既有 `DevScriptStructureTest` 失败，均未进入 admin 模块，不能作为本切片失败依据。
 
 ### Task 2: 套餐/租户候选与跨租户隔离切片
 
@@ -144,7 +152,7 @@
 
   ```bash
   cd java-base-module
-  mvn -pl server/admin -am -Drevision=1.0 -Dtest=TenantApiIntegrationTest,TenantPackageConcurrencyMySqlTest,TenantPermissionVersionIntegrationTest,RoleMenuOptionsIntegrationTest test
+  mvn -pl server/admin -am -Drevision=1.0 -Dtest=TenantApiIntegrationTest,TenantPackageConcurrencyMySqlTest,TenantPermissionVersionIntegrationTest,RoleMenuOptionsIntegrationTest -Dsurefire.failIfNoSpecifiedTests=false test
   ```
 
   Expected: current tests pass. Capture any failure involving disabled menus, package references, version conflicts, or tenant context as the next test target.
@@ -186,7 +194,7 @@
   cd node-base-module/base-admin-web
   npm test && npm run type-check && npm run build
   cd ../../java-base-module
-  mvn -pl server/admin -am -Drevision=1.0 test
+  mvn -pl server/admin -am -Drevision=1.0 -Dsurefire.failIfNoSpecifiedTests=false test
   git add \
     java-base-module/server/admin/src/main/java/com/xiwen/server/admin/tenant/application/TenantPackageApplicationService.java \
     java-base-module/server/admin/src/main/java/com/xiwen/server/admin/tenant/application/TenantApplicationService.java \
@@ -240,7 +248,7 @@
 
   ```bash
   cd java-base-module
-  mvn -pl server/admin -am -Drevision=1.0 -Dtest=LoginLogControllerContractTest,OperationLogControllerContractTest,OnlineUserControllerContractTest,AdminOperationLogInterceptorTest,AdminLoginLogWriterTest test
+  mvn -pl server/admin -am -Drevision=1.0 -Dtest=LoginLogControllerContractTest,OperationLogControllerContractTest,OnlineUserControllerContractTest,AdminOperationLogInterceptorTest,AdminLoginLogWriterTest -Dsurefire.failIfNoSpecifiedTests=false test
   cd ../node-base-module/base-admin-web
   npm test -- src/views/system/online-user src/views/system/login-log src/views/system/operation-log
   ```
@@ -272,7 +280,7 @@
   cd node-base-module/base-admin-web
   npm test && npm run type-check && npm run build
   cd ../../java-base-module
-  mvn -pl server/admin -am -Drevision=1.0 test
+  mvn -pl server/admin -am -Drevision=1.0 -Dsurefire.failIfNoSpecifiedTests=false test
   git add \
     java-base-module/server/admin/src/main/java/com/xiwen/server/admin/session/application/LoginLogApplicationService.java \
     java-base-module/server/admin/src/main/java/com/xiwen/server/admin/audit/application/OperationLogApplicationService.java \
