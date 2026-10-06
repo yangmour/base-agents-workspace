@@ -112,6 +112,14 @@ HTTP 错误 `0`。恢复后两端健康均为 `UP`，故障前旧 JWT 在两端�
 跨到 Pod-2 也为 `200`。这是本地单 Pod 故障恢复和十分钟稳定性基线，不替代生产 readiness
 摘流、滚动发布、依赖故障注入或正式容量报告。
 
+## 优雅停机与 readiness 摘流
+
+admin 的 Nacos 配置显式设置 `server.shutdown: graceful` 和 20 秒
+`spring.lifecycle.timeout-per-shutdown-phase`。第二个 Pod 健康后，用毫秒级轮询观察管理端点并
+发送 SIGTERM：2026-10-06 真实结果为 readiness 先返回 HTTP `503`，随后 `8282/8283` 关闭；
+存活 Pod-1 健康保持 `UP`。这证明了 Spring Boot 进程内的摘流顺序；生产还需在 Ingress/Service
+层验证摘流传播时延、滚动发布和在途写请求收尾。
+
 ## Redis 短暂故障
 
 在确认 admin 权限画像已经由一次 `/user/info` 读取预热后，使用专用脚本保持同一后台
