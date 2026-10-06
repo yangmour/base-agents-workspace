@@ -89,6 +89,29 @@ DEV_FOLLOW_LOGS=0 bash 本地开发/dev.sh java stop admin
 
 当前脚本验证两个实例同时在线时的跨 Pod 一致性；它不会自动杀停第一个实例，也不会替代生产滚动停机、readiness 摘除、消息补偿或长时容量验收。执行后续故障恢复时，应在独立夹具上停止一个实例，确认另一个实例的健康与读请求持续成功，再重新启动被停止实例并重复完整脚本；结果应另存为容量/故障报告。
 
+## 长时稳定性与单 Pod 故障窗口
+
+使用 `admin-multipod-stability-smoke.py` 将稳定性窗口固定为可重复的 HTTP 验收。脚本不执行
+进程控制，调用方在窗口中手工向 `--outage-index` 指定的 Pod 发送 SIGTERM，并在窗口结束前
+用同一制品恢复它；停机窗口内该 Pod 的连接失败会单独计为 `unavailable`，存活 Pod 的任何
+不可达或非 200 都会立即失败。窗口结束时脚本强制检查两端健康、故障前旧 JWT 和恢复后的
+新登录 JWT，报告不包含凭据或响应正文。
+
+```bash
+cd /Users/mia/Desktop/dev/code/case/java-base-module
+PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-multipod-stability-smoke.py \
+  --pod http://127.0.0.1:8082 --pod http://127.0.0.1:8282 \
+  --management http://127.0.0.1:8182 --management http://127.0.0.1:8283 \
+  --env-file 本地开发/.env.admin-e2e \
+  --duration-seconds 600 --interval-seconds 0.25 --outage-index 1 --timeout 5
+```
+
+2026-10-06 真实结果：窗口 `600.34s`，每 250ms 一轮；Pod-1 `2220/2220` 成功、不可达 `0`、
+P95 `16.11ms`、P99 `24.86ms`；Pod-2 停机窗口内预期不可达 `304` 次，其余 `1916` 次成功、
+HTTP 错误 `0`。恢复后两端健康均为 `UP`，故障前旧 JWT 在两端均为 `200`，恢复后的新 JWT
+跨到 Pod-2 也为 `200`。这是本地单 Pod 故障恢复和十分钟稳定性基线，不替代生产 readiness
+摘流、滚动发布、依赖故障注入或正式容量报告。
+
 ## 自动化边界
 
 ```bash
