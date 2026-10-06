@@ -120,7 +120,7 @@
 
 - [x] auth-center 使用公共客户端和临时机密客户端完成 OAuth 授权码 + PKCE 和 OIDC 身份获取；两条真实脚本均可重复运行。
 - [x] 已验证授权范围、重定向 URI、state、令牌刷新/重放、撤销和 RP-initiated logout；退出范围为当前 auth-center Session 与已登记客户端回调，不代替后台 Token 退出。
-- [ ] 验证客户端会话在多 Pod 间共享，滚动重启后协议流程按预期完成。
+- [x] 已用同一 MySQL/Redis/Nacos/JWT 的两个真实 auth-center Pod 验证客户端会话跨实例共享、授权码/令牌跨实例读取和 RP logout 后的旧会话拒绝；滚动重启长时保持仍留在 G4。
 - [ ] 后台只通过受保护内部接口维护 OAuth 客户端资料；停止 auth-center 时，该管理页面显示依赖不可用，其余后台核心功能继续工作。
 
 **完成标准：** 两个客户端可复现单点登录流程；后台 Token、账号、会话、签名密钥及 RBAC 与客户端认证域隔离。
