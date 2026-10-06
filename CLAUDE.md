@@ -92,22 +92,19 @@ mvn -pl server/admin spring-boot:run -Drevision=1.0
 
 ```bash
 cd java-base-module/本地开发
+./dev.sh doctor
 ./dev.sh start
 ./dev.sh health
-./init-database.sh
-./import-nacos-config.sh
-./dev.sh info
+./dev.sh backend admin
+./dev.sh web
+./dev.sh stop-all --yes
 ```
 
-本地中间件包括 MySQL、PostgreSQL、Redis、RabbitMQ、Nacos。常用服务与凭据：
+Windows 使用同一核心的 `dev.ps1`（PowerShell）或 `dev.cmd`（CMD），例如 `dev.ps1 backend admin`、`dev.cmd doctor --dry-run`。Nacos 配置同步使用 `import-nacos-configs.sh import|export` 或 `dev.ps1 import|export`；权限种子使用 `seed-admin-local.sh` 或 `dev.ps1 seed-admin`。所有入口都支持 `--dry-run`，日志和受管进程状态分别写入 `java-base-module/.local-dev/logs` 与 `.local-dev/state`。
 
-- MySQL：`localhost:3306`，`root/mysql123456`
-- PostgreSQL：`localhost:5432`，`postgres/postgres`
-- Redis：`localhost:6379`，密码 `pass-redis`
-- RabbitMQ：`5672`、管理端 `15672`，`guest/guest`
-- Nacos：`8848`，`nacos/nacos`
+本地中间件包括 MySQL、Redis、RabbitMQ、Nacos、XXL-Job 和 MinIO。工具自动探测 Docker Compose、Maven、Java、Node/npm，也可使用 `MAVEN_BIN`、`JAVA_BIN`、`NODE_BIN`、`NPM_BIN`、`COMPOSE_BIN` 覆盖路径；不要把本地凭据写入命令参数或提交到 Git。
 
-本地 Docker Compose 还会暴露 Nacos 的 `8080`、`9848`、`9849`；其中 `8080` 可能与 `api-gateway` 本地端口约定冲突，启动前确认端口占用或映射。
+凭据只从 `java-base-module/本地开发/.env` 读取；模板是 `.env.example`，首次使用请复制后填写。脚本不会打印完整凭据，`.local-dev` 已加入忽略规则。
 
 数据库初始化脚本会读取各服务 `docs/数据库变更/` 目录下的 SQL 文件。默认初始化：
 
