@@ -112,6 +112,25 @@ HTTP 错误 `0`。恢复后两端健康均为 `UP`，故障前旧 JWT 在两端�
 跨到 Pod-2 也为 `200`。这是本地单 Pod 故障恢复和十分钟稳定性基线，不替代生产 readiness
 摘流、滚动发布、依赖故障注入或正式容量报告。
 
+## Redis 短暂故障
+
+在确认 admin 权限画像已经由一次 `/user/info` 读取预热后，使用专用脚本保持同一后台
+JWT 轮询身份接口；另一个终端只对 admin 使用的 `dev-redis` 做短暂 pause/unpause，不能
+删除容器或清空数据：
+
+```bash
+cd /Users/mia/Desktop/dev/code/case/java-base-module
+PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-redis-fault-smoke.py \
+  --base-url http://127.0.0.1:8082 \
+  --env-file 本地开发/.env.admin-e2e \
+  --duration-seconds 20 --interval-seconds 0.5 --timeout 5
+```
+
+注入窗口示例：`docker pause dev-redis && sleep 6 && docker unpause dev-redis`。2026-10-06
+真实结果为 20.13 秒、39 次身份读取全部 `200`，无 HTTP 错误或连接不可达；Redis 恢复
+healthy 后新登录和身份读取均为 `200`，admin 健康端点仍为 `UP`。这只证明已预热 L1 的
+后台会话具备短暂 Redis 降级能力，不代表冷缓存、长时 Redis 故障或生产依赖隔离已经完成。
+
 ## 自动化边界
 
 ```bash
