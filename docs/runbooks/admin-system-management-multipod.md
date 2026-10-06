@@ -129,7 +129,12 @@ PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-redis-fault-smoke.py 
 注入窗口示例：`docker pause dev-redis && sleep 6 && docker unpause dev-redis`。2026-10-06
 真实结果为 20.13 秒、39 次身份读取全部 `200`，无 HTTP 错误或连接不可达；Redis 恢复
 healthy 后新登录和身份读取均为 `200`，admin 健康端点仍为 `UP`。这只证明已预热 L1 的
-后台会话具备短暂 Redis 降级能力，不代表冷缓存、长时 Redis 故障或生产依赖隔离已经完成。
+后台会话具备短暂 Redis 降级能力。
+
+冷缓存验收先重启 admin 清空 L1，再使用同一脚本追加 `--skip-warm --startup-delay-seconds 5`
+参数，并在等待窗口内暂停 Redis。真实结果为 28.72 秒、37 次首次身份读取全部 `200`，
+无 HTTP 错误或连接不可达；恢复后新登录仍为 `200`。这覆盖预热和冷缓存的短暂降级路径，
+不代表 Redis 长时故障或生产依赖隔离已经完成。
 
 ## 自动化边界
 
