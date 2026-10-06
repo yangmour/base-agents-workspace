@@ -73,6 +73,25 @@ PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-multipod-smoke.py \
 
 脚本的并发门槛是本地快速回归，不等同于生产容量结论。生产验收仍需按容量计划执行 50/100/200 VU 分级、至少 10 分钟稳定性测试，并同时记录 CPU、内存、GC、MySQL 连接池和 Redis 指标。
 
+登录后热点容量基线使用专用脚本，先在每个 Pod 串行读取一次用户列表预热权限画像，再执行
+200 并发波次；`--waves 5` 可观察连接池从启动/预热到稳定的变化。脚本每个波次均检查错误率
+和 P95，默认门槛为 500ms：
+
+```bash
+cd /Users/mia/Desktop/dev/code/case/java-base-module
+PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-capacity-smoke.py \
+  --pod http://127.0.0.1:8082 --pod http://127.0.0.1:8282 \
+  --management http://127.0.0.1:8182 --management http://127.0.0.1:8283 \
+  --env-file 本地开发/.env.admin-e2e \
+  --requests 200 --concurrency 200 --waves 5 --p95-limit-ms 500
+```
+
+执行波次期间另开终端采集 `actuator/prometheus` 的
+`hikaricp_connections_active/pending/max`、JVM GC 和缓存命中指标，并用
+`docker stats --no-stream dev-mysql dev-redis` 记录数据库与 Redis 的 CPU、内存峰值。
+未执行串行预热的首批并发会包含权限画像分布式锁等待，必须单独标为冷启动结果，不能与热点容量
+结果混写。
+
 ## 停止与故障恢复探针
 
 验收结束后只停止本轮启动的第二实例；第一个实例由 `dev.sh` 管理：
