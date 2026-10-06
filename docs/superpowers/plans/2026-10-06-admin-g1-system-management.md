@@ -256,7 +256,7 @@
 - Consumes: existing paged log endpoints, trusted tenant/session context, shared session revocation and `DELETE /system/online-users/{sessionId}`.
 - Produces: filterable redacted audit pages, cross-tenant log/session isolation, idempotent session kickout, and immediate 401 on the revoked access/refresh token from either Pod.
 
-- [ ] **Step 1: Run focused Java and frontend tests.**
+- [x] **Step 1: Run focused Java and frontend tests.**
 
   ```bash
   cd java-base-module
@@ -267,15 +267,21 @@
 
   Expected: focused suites pass; failures must identify a concrete contract rather than be hidden by a broad snapshot update.
 
-- [ ] **Step 2: Add failing redaction and failure-retention assertions.**
+  实际结果：JDK 21 下 Java 13 项全部通过（登录日志控制器 3、操作日志控制器 2、在线用户控制器 2、操作日志拦截器 2、登录日志写入 4）；前端 `online-user`、`login-log`、`operation-log` 3 个文件共 5 项通过。
+
+- [x] **Step 2: Add failing redaction and failure-retention assertions.**
 
   Java tests must assert log response strings do not contain password, access token, refresh token, internal signature or raw request body. Vue tests must seed a visible row, make the next request reject, and assert the row remains while `role="alert"` offers retry.
 
-- [ ] **Step 3: Implement the smallest correction.**
+  实际结果：既有 Java 审计拦截/写入契约已覆盖敏感字段脱敏和写入失败不影响登录；前端日志、在线用户测试覆盖错误保留行、`role="alert"` 和可重试入口。本轮未重复添加同义断言。
+
+- [x] **Step 3: Implement the smallest correction.**
 
   Preserve query validation (`startTime <= endTime`), return only summary DTO fields, keep write-side audit failures observable without rolling back the main operation, and use `String.valueOf(sessionId)` for pending/kickout state. Add Chinese comments describing why session revocation uses shared storage and why audit fields are redacted.
 
-- [ ] **Step 4: Run real audit and browser acceptance.**
+  实际结果：现有运行时代码已按可信租户和会话作用域过滤日志/在线用户，强制下线使用共享撤销存储并保持重复删除幂等；本轮未发现需要新增的生产修复。
+
+- [x] **Step 4: Run real audit and browser acceptance.**
 
   ```bash
   cd java-base-module
@@ -286,7 +292,9 @@
 
   Expected: two tenants can read only their own audit/session rows; the second tenant cannot kick the first tenant's session; logout and kickout log entries are queryable; the revoked token returns 401; temporary tenant/session cleanup reports no errors and no page errors occur.
 
-- [ ] **Step 5: Run regression and commit only this slice.**
+  实际结果：审计 HTTP `e53acfc1e052`、`d56c13e4f266` 各 52 checks passed、`cleanupErrors=[]`；`admin-system-audit.spec.ts` 连续两轮各 1 passed（5.7 秒、5.5 秒），无 pageerror。覆盖租户读写、登录/操作日志租户隔离、在线会话隔离、跨租户强退 4xx、同租户强退及令牌立即 401。
+
+- [x] **Step 5: Run regression and commit only this slice.**
 
   ```bash
   cd node-base-module/base-admin-web
@@ -315,6 +323,8 @@
     java-base-module/docs/admin-system-progress.md
   git commit -m "feat(admin): 完成审计日志与在线会话闭环"
   ```
+
+  实际结果：本切片无运行时代码变更；Java/前端定向测试和两轮真实 HTTP/浏览器证据均已记录。首次 HTTP `3eaf6daee4a3` 在 B 审计权限读取处出现一次性 403，恢复重跑后未复现，报告保留为失败证据，不计入通过轮次；多 Pod 会话收敛仍留到 Task 4。
 
 ### Task 4: Cross-slice two-Pod verification and handoff
 
