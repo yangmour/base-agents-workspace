@@ -12,19 +12,21 @@ bash 本地开发/dev.sh start
 DEV_FOLLOW_LOGS=0 bash 本地开发/dev.sh java start admin
 ```
 
-第二个实例复用同一个已构建制品，只改业务端口和管理端口。命令中的环境变量来自本机未跟踪的 `本地开发/.env`，不要把凭据写入命令行或日志：
+第二个实例复用同一个已构建制品，只改业务端口、管理端口和 XXL-Job 执行器端口。`8083/8183` 已被本地 auth-center 占用，不能拿来充当第二个 admin Pod；本手册使用 `8282/8283`。命令中的环境变量来自本机未跟踪的 `本地开发/.env`，不要把凭据写入命令行或日志：
 
 ```bash
 cd /Users/mia/Desktop/dev/code/case/java-base-module
 set -a
 . 本地开发/.env
 set +a
-mkdir -p server/admin/target/multipod-logs
+mkdir -p server/admin/target/multipod-logs /tmp/admin-multipod-xxl
+XXL_JOB_EXECUTOR_PORT=10000 \
+XXL_JOB_EXECUTOR_APPNAME=xxl-job-admin-system-pod2 \
+XXL_JOB_EXECUTOR_LOG_PATH=/tmp/admin-multipod-xxl \
 nohup java -jar server/admin/target/admin.jar \
   --spring.profiles.active=local \
-  --server.port=18082 \
-  --management.server.port=18182 \
-  --xxl.job.executor.port=19999 \
+  --server.port=8282 \
+  --management.server.port=8283 \
   > server/admin/target/multipod-logs/admin-b.log 2>&1 &
 echo $! > server/admin/target/multipod-logs/admin-b.pid
 ```
@@ -33,7 +35,7 @@ echo $! > server/admin/target/multipod-logs/admin-b.pid
 
 ```bash
 curl -fsS http://127.0.0.1:8182/actuator/health
-curl -fsS http://127.0.0.1:18182/actuator/health
+curl -fsS http://127.0.0.1:8283/actuator/health
 ```
 
 ## 执行真实验收
@@ -53,18 +55,19 @@ cd /Users/mia/Desktop/dev/code/case/java-base-module
 PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-e2e-fixture.py status
 PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-multipod-smoke.py \
   --pod http://127.0.0.1:8082 \
-  --pod http://127.0.0.1:18082 \
+  --pod http://127.0.0.1:8282 \
   --management http://127.0.0.1:8182 \
-  --management http://127.0.0.1:18182 \
-  --env-file 本地开发/.env.admin-e2e
+  --management http://127.0.0.1:8283 \
+  --env-file 本地开发/.env.admin-e2e-platform \
+  --requests 200 --concurrency 20 --p95-limit-ms 500
 ```
 
 报告只包含检查名称、状态码和延迟摘要。可在本地提高并发，但先确认数据库连接池和 Redis 能承受目标：
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 本地开发/tests/admin-multipod-smoke.py \
-  --pod http://127.0.0.1:8082 --pod http://127.0.0.1:18082 \
-  --management http://127.0.0.1:8182 --management http://127.0.0.1:18182 \
+  --pod http://127.0.0.1:8082 --pod http://127.0.0.1:8282 \
+  --management http://127.0.0.1:8182 --management http://127.0.0.1:8283 \
   --requests 1000 --concurrency 50 --p95-limit-ms 500
 ```
 
@@ -82,7 +85,9 @@ fi
 DEV_FOLLOW_LOGS=0 bash 本地开发/dev.sh java stop admin
 ```
 
-当前脚本验证两个实例同时在线时的跨 Pod 一致性；它不会自动杀停第一个实例，也不会宣称已经完成滚动停机、readiness 摘除、重启恢复或消息补偿验收。执行故障恢复时，应在独立夹具上停止一个实例，确认另一个实例的健康与读请求持续成功，再重新启动被停止实例并重复完整脚本；结果应另存为容量/故障报告。
+2026-10-06 的真实验收使用上述端口完成两轮：错误率均为 `0`，P95 分别为 `424.3ms` 和 `469.52ms`，P99 分别为 `625.61ms` 和 `759.75ms`，清理失败均为 `false`。故障探针对 Pod-2 发送 SIGTERM 后，Pod-1 继续接受旧 JWT（HTTP `200`）；Pod-2 用相同共享配置重启并健康后，旧 JWT 和新登录均为 HTTP `200`。第二实例在探针结束后已停止。
+
+当前脚本验证两个实例同时在线时的跨 Pod 一致性；它不会自动杀停第一个实例，也不会替代生产滚动停机、readiness 摘除、消息补偿或长时容量验收。执行后续故障恢复时，应在独立夹具上停止一个实例，确认另一个实例的健康与读请求持续成功，再重新启动被停止实例并重复完整脚本；结果应另存为容量/故障报告。
 
 ## 自动化边界
 

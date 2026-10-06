@@ -337,7 +337,7 @@
 - Consumes: the three committed slices and two admin URLs sharing MySQL, Redis and JWT configuration.
 - Produces: reproducible evidence for cross-Pod login, permission invalidation, idempotent restore/kickout, health checks and read latency.
 
-- [ ] **Step 1: Verify both Pods before mutation.**
+- [x] **Step 1: Verify both Pods before mutation.**
 
   ```bash
   cd java-base-module
@@ -349,14 +349,22 @@
 
   Expected: both health checks are `UP`, cross-Pod identity and permission revoke/restore checks pass, concurrent duplicate idempotency keys do not duplicate writes, and P95 stays below the supplied initial gate.
 
-- [ ] **Step 2: If the script fails, add a focused regression test before changing runtime code.**
+  实际结果：共享 MySQL、Redis、Nacos 和 admin JWT 的两个真实 JVM 使用 `8082/8182` 与 `8282/8283`；`8083/8183` 属于 auth-center，未作为第二个 admin Pod。两轮脚本均通过会话交叉、权限撤回到两端 `403`、同键并发恢复、移动端会话幂等强退和健康检查。第一轮并发读 200 次/20 worker 的错误率为 `0`、P95 `424.3ms`、P99 `625.61ms`；第二轮错误率为 `0`、P95 `469.52ms`、P99 `759.75ms`，两轮 `cleanupFailed=false`、`cleanupErrorTypes=[]`。权限收敛按脚本的 10 次、每次 300ms 轮询窗口完成（单端上限 3s），未修改收敛阈值。
+
+- [x] **Step 2: If the script fails, add a focused regression test before changing runtime code.**
 
   Reproduce the exact failing operation in the narrowest existing Java integration test or Python unit test, assert the expected status/RI code and shared-state result, then make the smallest fix. Do not weaken the smoke threshold or turn a real request into a mock.
 
-- [ ] **Step 3: Run the complete G1 evidence set twice.**
+  实际结果：本轮真实双 Pod 烟测没有失败项，因此没有运行时代码或验收脚本修复；保留现有脚本的真实 HTTP、数据库幂等和共享会话断言。
+
+- [x] **Step 3: Run the complete G1 evidence set twice.**
 
   Run Tasks 1–3 smoke scripts and Playwright specs twice with fresh run IDs. Copy only redacted reports and screenshots to the ignored report directory. Verify cleanup reports are `passed`, no page errors were recorded, and no report contains a credential or token pattern.
 
-- [ ] **Step 4: Update handoff documentation and stop before G2.**
+  实际结果：Task 1 菜单浏览器验收、Task 2 套餐范围浏览器验收和 Task 3 审计浏览器验收均按各自 fresh run 重复通过；Task 3 两轮 HTTP 分别为 `e53acfc1e052`、`d56c13e4f266`，各 `52 checks passed` 且 `cleanupErrors=[]`。本 Task 双 Pod 脚本又以新幂等键连续运行两轮；报告只保留检查状态和延迟摘要，未记录凭据、访问令牌或响应正文。
+
+- [x] **Step 4: Update handoff documentation and stop before G2.**
 
   Record the exact commands, Pod URLs (without credentials), test counts, P95/P99, permission convergence duration, cleanup status and commit hashes in the runbooks/progress log. Do not claim file service, code generation, XXL-Job, monitoring, SSO or business domains complete until their own plans and evidence exist.
+
+  实际结果：已更新 `docs/runbooks/admin-system-management-multipod.md` 和 `java-base-module/docs/admin-system-progress.md`，记录双 Pod 地址、共享依赖、两轮并发数字和故障恢复探针。故障探针在 Pod-2 真实 SIGTERM 期间确认 Pod-1 旧 JWT 仍为 `200`；Pod-2 以相同配置重启健康后，旧 JWT 和新登录均为 `200`。第二 Pod 已在验收后停止。G2 基础设施、客户端 SSO、分布式压测和业务域仍未宣称完成。
