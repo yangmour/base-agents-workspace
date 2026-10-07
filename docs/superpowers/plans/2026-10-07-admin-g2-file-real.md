@@ -87,3 +87,11 @@ Java `af8cef98` 修复长驻验收器令牌到期后的有界撤销，`043dcc7a`
 最终对26份来源、34个模块、40个文件逐一用修后探针重查：活跃模块、已用及预留、对象和MPU当前均为0，历史上传92,275,285B／26次保留。见 [实现与边界](../../../java-base-module/docs/runbooks/admin-file-direct-publication.md)、[最终后置证据](../../../java-base-module/docs/evidence/admin-file-direct-publication-final-postconditions-2026-10-07.json)、[退役证据](../../../java-base-module/docs/evidence/admin-file-direct-publication-retirement-2026-10-07.json)、[浏览器与截图](../../../node-base-module/base-admin-web/docs/runbooks/admin-file-direct-publication.md)。
 
 下一步先处理签发回执丢失后的原能力恢复，以及无对象 COMPLETE_STARTED 的关闭／恢复验收；随后跨实例多分片与进程中断、长期 XXL 媒体和墓碑维护。代码生成、真实监控等其它 G2 项仍按主计划推进；本机双实例不代表 Kubernetes 多 Pod，总目标保持 active。
+
+### 签发回执恢复切片已验收并提交
+
+Java `d1df2e79`、Node `56cfd66` 按原请求身份提供恢复/取消，保留全局 OMIT 和当前前端样式；ledger 唯一约束、短事务、独立稳定密钥、原期限与普通 MPU 物理快照贯穿生命周期。真实验收发现并修复精确冲突码、配额拒绝码和浏览器异步捕获竞态。完整实施见[专项计划](2026-10-07-admin-file-issuance-recovery.md)。
+
+最终制品八个真实 HTTP 场景 507 项、11 个真实故障浏览器场景与正常文件页面均通过。相关后端合并报告 1493 项执行通过、17 项既有 MQ 跳过；前端当前 HEAD 集成350项/类型/构建通过。73份来源、77个精确资源范围和77文件后置复查当前占用/预留/对象/MPU均0，184,550,033B/37次历史上传保留；c1身份/会话、原角色权限、空桶与临时peer全部收尾。原失败报告未改，部分早期间歇超时原因未确定。
+
+此次双实例证明签发唯一性、原能力接管及取消/完成后的恢复结果；不替代普通多分片全部跨实例业务、进程中断、无对象未知完成或长期调度。第2、4节中相应完整退出条件继续待验。证据见[后端手册](../../../java-base-module/docs/runbooks/admin-file-issuance-recovery-local.md)与[浏览器手册](../../../node-base-module/base-admin-web/docs/runbooks/admin-file-issuance-recovery.md)。
