@@ -113,8 +113,17 @@ reactor 构建成功（公共 RabbitMQ 外部集成 15 项原有跳过）；前�
 创建会话。双 Pod HTTP 两轮各 61 项、账户与 G0 浏览器每轮 2 用例通过，清理成功；
 18 项定向、2 项真实 MySQL 竞争测试和 3 项脚本安全测试通过；JDK 21 admin 全量 379 项通过，
 前端 242 项、类型和构建通过。Java `7af3b1c7`、Node `772c1e3`，详见
-[账户会话专项计划](2026-10-07-admin-account-session-lifecycle.md)。密码重置入口、错误密码限流
+[账户会话专项计划](2026-10-07-admin-account-session-lifecycle.md)。密码重置此后另行完成（见下）；错误密码限流
 与认证域令牌互换完整矩阵仍待补齐，不据此勾选完整独立认证或 G1。
+
+**2026-10-07 密码重置后续切片：** 沿用现有用户表格和弹窗风格，补齐独立按钮权限与数据范围保护的
+密码重置；凭证写入和所有设备会话撤销同事务，陈旧登录校验结果不能创建会话。
+审查发现普通幂等 SHA 摘要可绕过 bcrypt 猜测密码，真实失败测试后改为后台私钥 HMAC，V13 失效历史摘要；
+真实本地库历史普通凭证摘要由 181 降至 0，普通资料回执兼容性保持。新产物双实例 HTTP 两轮各 66 项、
+每轮 3 个浏览器用例通过，页面异常 0、清理完成；admin 393 项、前端 252 项/类型/构建通过。
+公共 RabbitMQ 15 项外部集成仍为原有跳过。Java `d32d8fc7`、Node `840ca33`，详见
+[密码重置专项计划](2026-10-07-admin-password-reset.md)。错误密码限流、认证域令牌互换、导出、租户目标规则
+与异步审计故障矩阵继续待验收，完整 G1 保持未完成。
 
 **完成标准：** 两租户/多角色浏览器 CRUD 与 API 反向越权测试全部通过；A 实例修改授权或撤销会话后 B 实例执行一致规则。
 
@@ -240,7 +249,7 @@ npm run type-check
 npm run build
 ```
 
-现有文件 HTTP 冒烟入口为 `java-base-module/本地开发/tests/admin-file-smoke.sh`；依赖 `E2E_ADMIN_*` 与 `E2E_ADMIN_B_*` 两组环境变量。它会创建/删除测试文件，必须指向专用验收环境。真实浏览器 E2E 已提供 `npm run test:e2e -- e2e/admin-smoke.spec.ts`、`npm run test:e2e -- e2e/admin-organization.spec.ts` 与 `npm run test:e2e -- e2e/admin-role-scope.spec.ts`；账号准备及结果保存见本地手册。真实多 Pod 脚本仍待落地，不以这些单实例用例替代。
+现有文件 HTTP 冒烟入口为 `java-base-module/本地开发/tests/admin-file-smoke.sh`；依赖 `E2E_ADMIN_*` 与 `E2E_ADMIN_B_*` 两组环境变量。它会创建/删除测试文件，必须指向专用验收环境。真实浏览器 E2E 已提供 `npm run test:e2e -- e2e/admin-smoke.spec.ts`、`npm run test:e2e -- e2e/admin-organization.spec.ts` 与 `npm run test:e2e -- e2e/admin-role-scope.spec.ts`；账号准备及结果保存见本地手册。真实多 Pod 验收使用 `java-base-module/本地开发/tests/admin-multipod-smoke.py`、`admin-account-session-smoke.py` 和 `admin-password-reset-smoke.py`；这些脚本的本地共享依赖证据不能代替 Kubernetes 及稳定容量验收。
 
 ## 5. 每部分功能的完成标准与提交规则
 
@@ -267,4 +276,4 @@ npm run build
 
 整体目标完成要求 G0–G11 的全部适用项通过，参考功能差距表没有未处理的范围内缺口，完整浏览器冒烟和关键业务链可重复运行，双租户隔离、多 Pod 一致性及性能报告具备实际证据。无法以有限测试保证永远没有缺陷；“直到没问题”在交付中具体定义为约定用例全部通过、无已知阻断性缺陷、遗留项明确记录且不能伪装为完成。
 
-**G0、G1 组织/角色及菜单/套餐范围/审计三个切片已完成真实复验；下一步补齐 G1 账户与认证变更、导出、租户目标规则和异步审计故障矩阵。** 继续按 G1→G2→G3→G4 推进已有模块收口；进入扩展业务阶段后按 G5→G11 交付，避免同时铺开七个只有页面骨架的业务域。
+**G0、G1 组织/角色、菜单/套餐范围/审计、账户启停与密码重置已完成各自真实复验；下一步补齐 G1 错误密码限流、认证域令牌互换、导出、租户目标规则和异步审计故障矩阵。** 继续按 G1→G2→G3→G4 推进已有模块收口；进入扩展业务阶段后按 G5→G11 交付，避免同时铺开七个只有页面骨架的业务域。
