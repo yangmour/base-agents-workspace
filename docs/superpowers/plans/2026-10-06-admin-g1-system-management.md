@@ -1,5 +1,11 @@
 # G1 系统管理剩余闭环实施计划
 
+**当前状态（2026-10-07）：已完成。** 本计划的三个切片及双实例复验已通过；后续密码、限流、
+导出、租户规则、任务上下文和审计故障补验也已收口，原 G1 八项均已完成。逐项依据见
+[G1 八项需求与验收证据](../../../java-base-module/docs/runbooks/admin-g1-requirements-evidence.md)。
+下文保留各切片当时的结果和局限，“G1 未完成”属于历史状态，不再作为待办。
+各项证据来自不同制品；没有将历史结果声明为当前制品上的全量重跑。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. 每个任务完成验证后独立提交；实现过程中补充中文注释，并保持现有前端风格。
 
 **Goal:** 在真实 admin、数据库、Redis 和 `base-admin-web` 浏览器链路中完成菜单/按钮、套餐/租户、审计/在线用户三个系统管理闭环。
@@ -33,8 +39,8 @@ JDK 21 admin 373 项全通过、无跳过，reactor 构建成功但公共 Rabbit
 详细记录与产物哈希见 [进度记录](../../../java-base-module/docs/admin-system-progress.md) 及
 [脱敏证据](../../../java-base-module/docs/evidence/admin-g1-closeout-2026-10-07.json)。
 
-下文历史失败记录保留，不再作为当前构建状态。该计划的切片范围不覆盖总目标 G1 中的完整
-密码/限流/重放、导出、租户配额/有效期和后台任务上下文矩阵；总目标 G1 保持未勾选。
+下文历史失败记录保留，不再作为当前构建状态。本计划当时的切片范围未覆盖总目标 G1 中的完整
+密码/限流/重放、导出、租户配额/有效期和后台任务上下文矩阵；这些后续补验已由页首证据表收口。
 临时第二实例的 XXL-Job 端口冲突与 RabbitMQ 关闭阻塞留待 G2/G4，不据此宣称基础设施或完整停机通过。
 
 ---
