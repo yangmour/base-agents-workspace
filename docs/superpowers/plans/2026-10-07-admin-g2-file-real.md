@@ -25,7 +25,7 @@
 
 - [x] `FileObjectMapper`与真实MySQL测试复现上传完成后删除失败、callback重试失败，修复CAS/单次配额结算；禁止将处理中媒体文件误删。
 - [x] `MultipartUploadUseCase`/`StorageServiceImpl`/`S3MultipartOperations`及测试核对逻辑key、物理prefix、HEAD真实对象size；真实MinIO直传和分片闭环。
-- [ ] 补真实声明大小与实际对象不一致、超额拒绝后的对象及预留后置验收。
+- [x] 补真实声明大小与实际对象不一致、超额拒绝后的对象及预留后置验收。
 - [x] 回调状态、租户与actor/capability、重放/CAS竞争采用真实MySQL当前读及持久结果校验，保留中文状态说明；跨进程业务矩阵仍见第4节。
 
 ## 3. 页面生命周期
@@ -109,3 +109,16 @@ Java `d1df2e79`、Node `56cfd66` 按原请求身份提供恢复/取消，保留�
 仍需普通多分片声明/实际大小不一致及超额后置、无ledger历史未知结果处理策略、完整跨实例业务、真实XXL管理端长期恢复与集群容量；未把本机双JVM或执行器run/log调用当成这些验收。前端风格未变，本切片无新增浏览器结论。
 
 Java独立提交：`f62ca5954fa6200ff04bd1f0a13184d032ca16db`。
+
+## 8. 普通分片实际大小与顺序跨实例闭环（2026-10-07）
+
+- [x] 小于/等于声明值按实际计费，超过预留拒绝，声明超模块上限在登记前拒绝；真实三part最后正文不截断。
+- [x] 初始化、交替签名、完成、原/新键重放、下载哈希、删除和恢复读取在两组admin/file间交换方向执行，10场景740项全部通过。
+- [x] 纳入当前白名单修复2a2c6827后的独立package784项（file406）、Python161项通过；中断/报告故障安全修复独立复审Approve。
+- [x] 主实例本机XXL日志路径修正并回读完成，旧失败保留；全部16份后置、48会话与身份/桶/peer退役完成。
+
+[专项计划](2026-10-07-admin-file-multipart-size.md)、[手册/证据](../../../java-base-module/docs/runbooks/admin-file-multipart-size-local.md)。主file保留27544e317e20d314，前端风格未变。
+
+仍需超额对象删除失败后的真实调度恢复、跨日计量、跨实例并发竞争、无ledger历史未知结果策略和实际XXL管理端长期维护。顺序双JVM业务已证明的部分不再混在未验项中；Kubernetes与容量保持G4范围。
+
+本切片Java独立提交：`af49e30ee704d63d97fdfb2fe184e080cd536c94`。
