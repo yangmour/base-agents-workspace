@@ -58,3 +58,32 @@
 剩余：真实取消/网络失败、签发响应丢失的秘密能力恢复、无对象COMPLETING的最终处理、声明/实际大小不一致、跨JVM回调/分片/配额及进程故障。组件与数据库测试不代替上述真实矩阵。Kubernetes及稳定压测归G4，总目标active。
 
 证据：[后端手册](../../../java-base-module/docs/runbooks/admin-file-real-acceptance.md)、[SQL后置核对](../../../java-base-module/docs/evidence/admin-g2-file-mysql-postconditions-2026-10-07.json)、[浏览器手册](../../../node-base-module/base-admin-web/docs/runbooks/admin-file-real-acceptance.md)。
+
+
+### 直传不可变发布切片已提交，完整文件验收继续推进
+
+真实基线发现 `b92ce119978c`：成功30字节文件复用旧PUT改写88字节返回200，下载变为88字节而API仍30字节。原失败记录保留，测试资源及会话精确清理无错误。此前“正常链路通过”不覆盖该缺陷，完整文件退出条件继续未满足。
+
+- [x] 核对当前两个实际服务进程UP并复现已发布对象改写；建立新独立夹具与桶，旧批次不复活。
+- [x] 按[不可变发布设计](../specs/2026-10-07-admin-file-direct-publication-design.md)完成新直传单分片MPU、旧记录候选复制、地址快照、发布/取消CAS、配额事务及跨实例恢复。
+- [x] 直传对象改写、取消已写PUT、超额完成真实 RED/GREEN；旧 pending/published 采用与旧 PUT 后写已核验，原会话收尾失败及独立补清理另记。
+- [ ] 完整迟到 I/O 与跨进程中断矩阵；协议 pilot 的一次半体 PUT 不替代全部时序。
+- [x] 独立只读SQL/S3状态探针（Java `21b6911a`），17纯测试、6 SDK内存响应校准及真实基线，严格区分事实采集和业务通过。
+- [x] 新直传单分片MPU真实MinIO协议试验 `f091daa080a5`；复用URL及迟到正文均被拒绝，已完成内容保持一致，精确前缀清理为0。此为协议试验，非生产API或浏览器通过。
+- [x] 真实浏览器取消/网络故障/丢完成响应七场景；内部part1 URL分类不得混入用户多分片统计。
+- [x] 本切片源码冻结、独立复审、完整构建、固定制品双实例回调和两轮正常浏览器，精确清理后分别提交。完整进程故障与跨实例多分片矩阵继续待验。
+
+本批 `.env.admin-e2e-file-failure-20261007-b1` 已退役，专用桶 `g2-file-failure-20261007-b1` 已确认对象／MPU 为 0 后删除。临时 LIMITED 菜单已原样恢复，两个 tenant／四个用户均禁用、未撤销会话为 0，两个临时 peer 停止；主预览服务保留。下一轮必须创建新批次。
+
+
+### 本切片最终验收与提交
+
+Java `af8cef98` 修复长驻验收器令牌到期后的有界撤销，`043dcc7a` 修复 MinIO 目录前缀遗漏活跃 MPU 的只读探针，`91d000d8` 提交单分片不可变发布、旧记录采用、持久恢复与中文注释。Node `668cbd6` 提交真实浏览器故障验收，生产页面样式未改。
+
+最终 Java 编译源 68 个文件与独立构建快照 SHA 一致，321 XML 合计 1396 项（1379 执行通过、17 MQ opt-in 跳过，0 失败／错误），file250、admin493。文件脚本最终纯回归49项、SDK内存分页8项；前端原303项与新增证据guard4项分别通过，类型与构建通过。
+
+固定新制品真实HTTP六轮450项全部通过；双本机实例同键／不同键并发回调均200/200、重放一致、仅结算一次。最终正常浏览器 f1db76e89a32、32c0218f1b9b 两轮及七项故障全部通过，pageerror0、cleanup complete。第一次七项浏览器因探针漏计而失败的报告保留。旧记录c0244dd0da6e业务兼容通过，长驻access到期造成三会话清理失败的原报告也保留；已独立精确撤销并补查终态，未改为整体绿。
+
+最终对26份来源、34个模块、40个文件逐一用修后探针重查：活跃模块、已用及预留、对象和MPU当前均为0，历史上传92,275,285B／26次保留。见 [实现与边界](../../../java-base-module/docs/runbooks/admin-file-direct-publication.md)、[最终后置证据](../../../java-base-module/docs/evidence/admin-file-direct-publication-final-postconditions-2026-10-07.json)、[退役证据](../../../java-base-module/docs/evidence/admin-file-direct-publication-retirement-2026-10-07.json)、[浏览器与截图](../../../node-base-module/base-admin-web/docs/runbooks/admin-file-direct-publication.md)。
+
+下一步先处理签发回执丢失后的原能力恢复，以及无对象 COMPLETE_STARTED 的关闭／恢复验收；随后跨实例多分片与进程中断、长期 XXL 媒体和墓碑维护。代码生成、真实监控等其它 G2 项仍按主计划推进；本机双实例不代表 Kubernetes 多 Pod，总目标保持 active。
