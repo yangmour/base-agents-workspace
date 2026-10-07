@@ -301,3 +301,8 @@ npm run build
 2026-10-07 审计韧性切片：独立有界队列、固定标签终态/耗时/积压、SQL异常脱敏与双上下文清理；两轮独占MySQL组件故障各4项、完整后台470/reactor1109（零失败错误，旧Rabbit opt-in15跳过）、前端272/42与类型构建通过。正常两个JVM四轮HTTP各65项/清理0；浏览器G0/系统审计各两轮共4项、pageerror0。修复HTTP清理范围和恢复报告洗白，9项安全回归含RED/GREEN，真实失败报告恢复仍为failed。17份最终JSON扫描零匹配，新活动会话0，13个历史会话保留。组件故障不代替部署Pod故障恢复，尽力审计不保证零丢失；整体G1仍待后台任务/XXL/Outbox授权和进程故障矩阵。详细 [计划](2026-10-07-admin-audit-resilience.md)、[证据](../../../java-base-module/docs/evidence/admin-audit-resilience-2026-10-07.json)。
 
 审计韧性 Java 提交 `0e84f8dcbdb533315bf48bfc9ebc7672e6be97e3`；独立最终复审 Approve，无 Critical/Important。恢复分支修正后主实例原正常入口 0c3aae6404f9 再验65项通过；9项安全回归最终通过，当前主30081 UP、次30082停止。根文档独立提交；保留其他任务工作区/暂存，不将完整 G1 标为完成。
+
+
+2026-10-07 全局后台任务边界：平台角色加按钮权限、服务入口防绕过、可信租户映射；admin Outbox XXL 前后清空身份，不继承或恢复请求身份。页面保留样式，普通角色仅权限说明，撤权清空数据/弹窗。独立快照 package 后台489/reactor1128，零失败错误、原Rabbit opt-in15跳过；Vue274/42、类型构建通过。最终HTTP两轮53/52，真实XXL创建幂等/启停/手动调用/双200日志；浏览器平台XXL/普通角色/G0各两轮共6通过，清理0。审查修复周期日志掩盖触发失败及导航失败漏注销；真实404导航校准保留失败，专用新夹具任务/所有用户活动会话及对应远端任务0。单本地JVM不代表Pod恢复，空批次不代表Rabbit发布；真实租户业务Handler、文件线程、进程持久账本/故障矩阵仍待验，完整G1保持未完成。详见[计划](2026-10-07-admin-task-boundaries.md)、[证据](../../../java-base-module/docs/evidence/admin-task-boundaries-2026-10-07.json)。
+
+最终独立复审 Approve，无 Critical/Important；Java `6a4afbc080624f859665164a0d0d4c3cf0f80bc0`，Node `2b772b17b03432de8f7d9300e4e7bb3a4c434c92`。其他容量草稿、Node三个既有暂存及 components.d.ts 均保留；主实例 UP，整体目标保持 active。
