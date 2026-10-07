@@ -197,7 +197,7 @@ reactor 构建成功（公共 RabbitMQ 外部集成 15 项原有跳过）；前�
 
 上述条目只代表已完成的本地性能、一致性和单 Pod 故障恢复基线；生产 readiness 摘流、滚动发布、
 依赖故障注入和正式容量模型仍未完成。
-详细证据见 [`java-base-module/docs/admin-system-progress.md`](../../java-base-module/docs/admin-system-progress.md)。
+详细证据见 [`java-base-module/docs/admin-system-progress.md`](../../../java-base-module/docs/admin-system-progress.md)。
 
 **性能验收口径：** 先记录硬件资源、数据库数据量、接口组合、缓存状态及并发模型，再给出报告。初始回归门槛采用 50 VU、60 秒，菜单/权限/用户列表读取目标 P95 < 500 ms、非预期错误率 < 1%；排除有意制造的 401/403 反向测试。此门槛是初始测试目标，不是生产容量承诺。另做 50/100/200 VU 逐级负载与至少 10 分钟稳定性测试，记录吞吐、P95/P99、错误率、CPU、内存、GC 和数据库/Redis 指标；找出饱和点后再确定部署容量。
 
