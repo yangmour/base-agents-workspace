@@ -51,15 +51,16 @@ file executor 的 Handler 与默认周期如下；清理类 Handler 仍受 `file
 
 ## 2. 前置条件与只读检查
 
-需要 JDK 21、Maven、Node/npm、Docker Desktop、`docker-compose`、`lsof` 和 `curl`。依赖版本以 POM 和前端锁文件为准。
+需要 Node.js 20+、npm、JDK 21、Maven 或 Maven wrapper、Docker Desktop 和 Compose。依赖版本以 POM 和前端锁文件为准；脚本内的端口与 HTTP 检查由 Node 核心完成，不要求额外安装 Bash 工具。
 
 ```bash
 cd /Users/mia/Desktop/dev/code/case
 java -version
 node --version
 npm --version
-docker-compose version
+docker compose version
 docker ps --format 'table {{.Names}}	{{.Status}}	{{.Ports}}'
+# 可选：macOS/Linux 上检查端口占用；Windows 使用本机网络诊断工具。
 lsof -nP -iTCP -sTCP:LISTEN
 ```
 
@@ -76,9 +77,48 @@ lsof -nP -iTCP -sTCP:LISTEN
 
 本机 6379、3000、3307、18080 可能属于其他项目，不能仅凭端口开放认定可复用。`dev.sh` 会把外部占用的中间件端口视为可用，启动前需核对监听者归属。不要强杀未确认的进程。
 
+### 跨平台脚本入口
+
+本地开发编排由 `java-base-module/本地开发/dev.mjs` 统一实现。macOS/Linux、Git Bash 和 WSL 使用 Bash 包装器；Windows 不需要安装 Bash，可以直接使用 PowerShell 或 CMD：
+
+以下命令均在 `java-base-module` 目录中执行。
+
+```bash
+# macOS/Linux/Git Bash/WSL
+bash 本地开发/dev.sh doctor
+bash 本地开发/dev.sh start
+bash 本地开发/dev.sh backend admin
+bash 本地开发/dev.sh web
+bash 本地开发/dev.sh stop-all --yes
+bash 本地开发/import-nacos-configs.sh import
+bash 本地开发/seed-admin-local.sh
+```
+
+```powershell
+# Windows PowerShell
+.\本地开发\dev.ps1 doctor
+.\本地开发\dev.ps1 start
+.\本地开发\dev.ps1 backend admin
+.\本地开发\dev.ps1 web
+.\本地开发\dev.ps1 stop-all --yes
+.\本地开发\dev.ps1 import
+.\本地开发\dev.ps1 seed-admin
+```
+
+```cmd
+:: Windows CMD
+本地开发\dev.cmd doctor
+本地开发\dev.cmd start
+本地开发\dev.cmd backend admin
+本地开发\dev.cmd web
+本地开发\dev.cmd stop-all --yes
+```
+
+所有入口都支持 `--dry-run`；它不会启动 Docker、Java 或 npm。日志位于 `java-base-module/.local-dev/logs`，进程状态位于 `java-base-module/.local-dev/state`。脚本需要 Node.js 20+、JDK 21、Maven 或 Maven wrapper、Docker Desktop 和 Compose；工具路径可通过 `MAVEN_BIN`、`JAVA_BIN`、`NODE_BIN`、`NPM_BIN`、`COMPOSE_BIN` 覆盖。
+
 ## 3. 本地配置
 
-`java-base-module/本地开发/.env` 已被 Git 忽略。已有文件必须保留；缺少时 `dev.sh` 会从 `.env.example` 创建并退出，填写本地值后重新运行，不要覆盖已有配置。
+`java-base-module/本地开发/.env` 已被 Git 忽略。已有文件必须保留；首次使用时手动复制 `.env.example` 为 `.env` 并填写本机值，脚本不会覆盖已有配置。
 
 脚本需要 MySQL、Redis、Nacos、内部 HMAC、S3 等配置；后台 JWT 使用 `ADMIN_JWT_PRIVATE_KEY`。模板中的公开开发值只用于本地环境，共享环境需通过部署 Secret 注入。
 
@@ -100,7 +140,7 @@ bash 本地开发/dev.sh web
 
 admin 启动时由 Flyway 应用尚未执行的 `server/admin/src/main/resources/db/migration` 迁移。不要手工重复导入这些 SQL，也不要运行不存在的 `init-database.sh`。发现业务端口已监听时，`java start admin` 会跳过构建和启动，仍需核对运行版本与健康状态。
 
-前端 `web` 会在缺少 `node_modules` 时安装依赖。日志分别为 `/tmp/java-base-module/admin.log` 和 `/tmp/admin-web.log`。检查：
+前端 `web` 会在缺少 `node_modules` 时安装依赖。后端与前端日志统一位于 `java-base-module/.local-dev/logs`，受管 PID 状态位于 `.local-dev/state`。检查：
 
 ```bash
 curl --fail --silent --show-error http://127.0.0.1:8182/actuator/health
