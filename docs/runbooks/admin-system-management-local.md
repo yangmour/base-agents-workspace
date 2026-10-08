@@ -17,6 +17,38 @@ admin 健康检查 → http://127.0.0.1:8182/actuator/health
 
 正式前端固定监听 5173，冲突时报错，不自动切换。生产同源入口由部署代理提供；本地 `vite.config.ts` 当前固定代理到 `http://127.0.0.1:8082`。
 
+### 文件管理请求链
+
+文件管理页面只调用 admin 的 `/admin-api/system/files` 和 `/admin-api/system/file-modules`。
+admin 从已验证的后台会话取得租户与操作者，再通过内部 HMAC/Feign 调用独立的 file 服务；
+浏览器使用 file 签发的短期地址直接上传对象存储，文件内容不会经过 admin 进程。file 服务
+继续持有对象元数据、配额、媒体处理和恢复逻辑，清理、分片恢复、失败任务重试和指标更新
+由 file 自己注册的 XXL-Job Handler 执行，不在每个 Pod 中启动 Spring `@Scheduled`。
+当前 admin 租户任务页面只管理 admin executor。admin 启动后会通过调度中心管理账号检查
+`file-service` executor 和 8 个固定 Handler：缺少执行器组时按配置尝试创建，缺少任务时创建并启动，
+已存在的 Handler 直接跳过；单个任务失败也会继续检查后续任务。跨 executor 的后台聚合视图另列为后续范围。
+
+file executor 的 Handler 与默认周期如下；清理类 Handler 仍受 `file.service.cleanup.enabled`
+控制，生产启用前应先确认租户锁和对象存储权限：
+
+| Handler | 默认周期 |
+| --- | --- |
+| `fileMultipartRecovery`、`fileMediaTaskRetry` | `0 */5 * * * ?` |
+| `filePendingUploadCleanup` | `0 */10 * * * ?` |
+| `fileTempCleanup`、`fileFinalFailedTaskAlert` | `0 0 * * * ?` |
+| `fileStorageMetrics` | `0 30 * * * ?` |
+| `fileOrphanCleanup` | `0 0 3 ? * SUN` |
+| `fileCompletedTaskCleanup` | `0 0 3 * * ?` |
+
+需要启用维护任务时，为 admin 配置 `XXL_JOB_ADMIN_ADDRESSES`、`XXL_JOB_ADMIN_USERNAME`、
+`XXL_JOB_ADMIN_PASSWORD`，为 file 服务配置 `XXL_JOB_ADMIN_ADDRESSES`、`XXL_JOB_ACCESS_TOKEN`、
+`XXL_JOB_FILE_EXECUTOR_APPNAME`、`XXL_JOB_FILE_EXECUTOR_PORT` 及日志路径变量。任务补齐默认由
+`XXL_JOB_FILE_TASK_BOOTSTRAP_ENABLED=true` 开启；`XXL_JOB_FILE_GROUP_ID` 大于 0 时直接使用指定执行器组，
+否则按执行器名称查询，`XXL_JOB_FILE_GROUP_AUTO_CREATE=true` 时查询不到才自动创建执行器组。管理账号需要
+具备执行器组和任务的新增、查询、启动权限。file 默认复用本地 `.env` 的 `XXL_JOB_EXECUTOR_LOG_PATH`，
+也可用 file 专用日志路径覆盖。只启动 admin 做 G0 页面验收时，file 的
+后台文件页面接口仍按实际 file 服务依赖启动，不能用静态数据替代联调。
+
 ## 2. 前置条件与只读检查
 
 需要 JDK 21、Maven、Node/npm、Docker Desktop、`docker-compose`、`lsof` 和 `curl`。依赖版本以 POM 和前端锁文件为准。
