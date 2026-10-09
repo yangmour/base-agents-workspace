@@ -15,16 +15,18 @@
 
 ## Task 1: 后端
 
-- [ ] 新增 FileSearchRequest.bucketName、可选模块搜索、跨模块搜索/统计 Feign 路由、当前租户桶候选。
-- [ ] MySQL 测试不同模块同/不同桶、其他租户同桶、删除和空桶、分页与统计一致；HTTP/Feign 参数验证。
-- [ ] 相关测试和 package 通过，独立审查后提交。
+- [x] 新增 FileSearchRequest.bucketName、可选模块搜索、跨模块搜索/统计 Feign 路由、当前租户桶候选。
+- [x] MySQL 测试不同模块同/不同桶、其他租户同桶、删除和空桶、分页与统计一致；HTTP/Feign 参数验证。
+- [x] 相关测试和 package 通过，独立审查后提交。
 
 ## Task 2: 前端
 
-- [ ] FileSearchQuery.moduleCode 可选，bucketName 可选；listFileBuckets(signal) 新增。
-- [ ] 模块/桶默认全部，表格桶名列；reset清桶保留选定模块；详情、下载和删除使用当前结果行内 moduleCode。
-- [ ] 生命周期/传输/权限测试、type-check、build；独立审查后提交。
+- [x] FileSearchQuery.moduleCode 可选，bucketName 可选；listFileBuckets(signal) 新增。
+- [x] 模块/桶默认全部，表格桶名列；reset清桶保留选定模块；详情、下载和删除使用当前结果行内 moduleCode。
+- [x] 生命周期/传输/权限测试、type-check、build；独立审查后提交。
 
 ## Task 3: 交付
 
-- [ ] 最终审查，部署及只读核对，记录验证和提交情况。
+- [x] 最终审查，部署及只读核对，记录验证和提交情况。
+
+实施、审查及部署验证完成，见 [验收记录](../verification/2026-10-09-file-bucket-query.md)。
