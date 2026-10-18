@@ -28,16 +28,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 默认 JDK 21，核心栈包括 Spring Boot `3.2.0`、Spring Cloud `2023.0.0`、Spring Cloud Alibaba `2023.0.0.0-RC1`、MyBatis-Plus `3.5.15`、Redis/Redisson、Caffeine、RabbitMQ、Knife4j `4.5.0`、XXL Job、Spring AI Alibaba BOM。
 - 顶层模块：`common/` 与 `server/`。
 - `common/` 是公共能力层：
-  - `base-basic`：统一响应 `R`/`RS`/`RI`、`BizException`、全局异常处理、traceId、请求日志、响应包装、Feign 解包配置。
+  - `base-contract`：独立的 `RI`、整数错误码、`BusinessException`、`PageRequest`/`PageResult` 与通用上下文。
+  - `base-basic`：Servlet 异常处理、traceId、请求日志、响应包装和显式时区转换。
+  - `base-internal-auth`：内部 HMAC 协议、签名/验签与 nonce SPI。
+  - `base-feign-support`：Feign 解包、重试/熔断和内部请求签名适配。
   - `base-authz`：RBAC/ABAC 鉴权模型公共对象。
   - `base-redis`：Redis、Caffeine 多级缓存、空值缓存、防穿透、Redisson 分布式锁。
   - `base-rabbitmq`：RabbitMQ 基础封装。
-  - `base-feignClients`：跨服务 Feign Client 以及 DTO/Request/VO 契约。
+  - `base-feign-clients`：跨服务 Feign Client 以及 DTO/Request/VO 契约。
   - `base-knife4j` 与 `base-knife4j-webflux`：分别用于 MVC 服务与 WebFlux/Gateway 服务的 API 文档配置。
 - `server/` 是可部署服务层：
   - `api-gateway`：WebFlux 网关。
   - `auth-center`：认证、授权、用户、角色、菜单、操作日志等核心能力。
-  - `admin`：后台管理前端的后端 facade。
+  - `admin`：具有独立认证、权限和租户管理的模块化后台，其他能力由各领域 Port 接入。
   - `file`、`im`、`weixin-bot`、`spring-ai-alibaba`、`examples`：文件、IM、微信机器人、AI 与示例服务。
 
 ### 后端常用命令
@@ -77,13 +80,14 @@ mvn -pl server/admin spring-boot:run -Drevision=1.0
 
 - 对外 HTTP 响应使用 `RI<T>`/统一 JSON 结构，包含 `code`、`msg`、`data`、`traceId`。
   - 成功：`code = 200`
-  - 业务异常：`code = 600`，优先抛 `BizException`
+  - 业务异常：优先抛 `BusinessException` 并保留整数业务码和 cause；admin 使用 100001–199999 独立码段，HTTP 状态与业务码分开
   - 系统异常：`code = 500`
-- Feign Client 放在 `common/base-feignClients`。
-  - Feign 方法返回业务 DTO/VO/List/Page 类型，不返回 `RI`/`R`。
-  - 服务端 inner controller 可以返回 `RI<T>`，由 `base-basic` 的 Feign 解包配置拆包。
-  - Fallback 失败时应抛 `BizException`，不要伪造成功响应。
-- 分页统一使用 MyBatis-Plus `Page<T>`。请求参数通常为 `pageNum`、`pageSize`；响应字段使用 `records`、`current`、`size`、`total`，可选 `pages`。
+- Feign Client 放在 `common/base-feign-clients`。
+  - Feign 方法返回业务 DTO/VO/List/Page 类型，不返回 `RI`。
+  - 服务端 inner controller 可以返回 `RI<T>`，由 `base-feign-support` 的 Feign 解包配置拆包。
+  - Fallback 失败时应抛 `BusinessException`，不要伪造成功响应。
+- HTTP 分页使用 `PageRequest(pageNo,pageSize)` 和 `PageResult(list,total,pageNo,pageSize)`，页大小 1–100。MyBatis-Plus `Page<T>` 仅限内部；游标使用 `CursorPageResult(list,nextCursor)`。
+- 整数 ID 的 JSON 表示为十进制字符串，数量与 version 保持数值；时间点为 UTC Instant（固定毫秒、Z），日期保持 LocalDate。历史数据库时间通过 `base.time.business-zone` 显式转换，admin session 的历史 UTC 字段按 UTC 处理。
 - Spring MVC 服务使用 `common/base-knife4j`；WebFlux/Gateway 服务使用 `common/base-knife4j-webflux`。不要在同一个服务里混用两套 Knife4j 模块。
 
 ### 后端本地开发环境
@@ -116,9 +120,9 @@ Nacos 配置导入脚本读取 `docs/yaml`，导入 `base.yaml` 与 `weixin-bot-
 
 ### 技术栈与结构
 
-该项目使用 Vue 3.4、TypeScript、Vite 5、Vue Router、Pinia、Element Plus、Axios。源码主要按 `src/api`、`src/router`、`src/stores`、`src/types`、`src/utils`、`src/directives`、`src/layout`、`src/views` 组织。
+该项目使用 Vue 3.4、TypeScript、Vite 5、Vue Router、Pinia、Element Plus、Axios。源码按 `src/app`、`src/features`、`src/shared` 组织。app 负责组装，features 按领域组织 API/types/pages，shared 提供公共契约与能力；features 不导入 app，shared 不导入业务域。
 
-README 快速开始中曾出现旧目录名 `node-base-module/admin-frontend`；实际路径以 `node-base-module/base-admin-web/` 为准。
+npm 包名与项目目录统一为 `base-admin-web`。
 
 管理后台前端调用后端 `admin` facade，不直接访问后端内部服务：
 
@@ -139,14 +143,14 @@ npm run build
 npm run preview
 ```
 
-`package.json` 中没有独立 lint 或 test 脚本；验证时使用 `npm run type-check` 和 `npm run build`。`npm run dev` 会启动 Vite（host `0.0.0.0`、端口 `5173`），配置中 `server.open: true`，在有 GUI 的环境可能自动打开浏览器。
+验证使用 `npm test`、`npm run type-check` 和 `npm run build`。`npm run dev` 会启动 Vite（host `0.0.0.0`、端口 `5173`），配置中 `server.open: true`，在有 GUI 的环境可能自动打开浏览器。
 
 ### 管理后台前端契约
 
-- 请求封装在 `src/utils/request.ts`，API 模块放在 `src/api/`。
-- 后端响应结构为 `code`、`msg`、`data`、`traceId`；前端类型可兼容 `message`。
-- `code !== 200` 由请求层统一作为错误处理。
-- HTTP 401 或响应码 `401`/`601` 会触发 `/api/admin/token/refresh` 刷新 token；刷新成功后重放请求，失败后清理本地登录态并跳转登录页。
+- 请求封装在 `src/shared/api/http.ts`；领域 API 放在 `src/features/<feature>/api/`，独立类型放在同领域 `types/`，API 不重导出类型。
+- 后端响应结构为 `code`、`msg`、`data`、`traceId`。
+- `code !== 200` 由请求层统一作为错误处理，错误分类依赖业务码，不解析 msg；网关非 RI 错误按 HTTP 状态分类。
+- HTTP 401 或响应码 `401`/`601` 会触发 `/api/admin/auth/token/refresh` 刷新 token；刷新成功后重放请求，失败后清理本地登录态并跳转登录页。
 - 当前用户菜单与动态路由应收敛到后端 `MenuTreeVO` 这一单一菜单树契约。除非已有契约明确需要，不要新增并行菜单模型。
 - TypeScript 配置启用 `strict`，路径别名 `@/* -> src/*`，类型包含 `vite/client` 与 `element-plus/global`。
 - 管理后台 UI 方向来自项目文档：现代、轻量、高对比、卡片式后台；主色 `#1677FF`，侧边栏 `#1f1f1f`，圆角 `6px`-`8px`。
@@ -217,26 +221,29 @@ npm test
 
 ## 跨模块设计注意事项
 
-- 当前管理系统优化范围覆盖 `java-base-module/server/auth-center`、`java-base-module/server/admin`、`java-base-module/common/base-feignClients`、`node-base-module/base-admin-web`。
+- 当前管理系统优化范围覆盖 `java-base-module/server/auth-center`、`java-base-module/server/admin`、`java-base-module/common/base-feign-clients`、`node-base-module/base-admin-web`。
 - 菜单与权限相关改动应保持后端作为权限真值源。前端权限判断只用于体验和页面展示，不能替代后端鉴权。
 - RBAC 与 ABAC 是串联关系：登录态校验、RBAC 角色/权限判断、资源上下文装配、ABAC 表达式裁决。
 - 权限画像和缓存改动要保留 ABAC 上下文字段，例如 `businessLine`、`moduleCode`、`channel`、`userType`、`tenantId`、`attributes`；只缓存 roles/permissions 不够。
 
 ## 命名规范（强制）
 
-新增代码必须遵循，详见 `java-base-module/docs/项目架构评价与修改计划.md#十命名规范`。
+新增代码必须遵循，详见 `java-base-module/docs/refactoring/admin-web-2026-10/naming-2026-10-18/README.md`。
 
 | 类别 | 约定 |
 |------|------|
 | 实体包 | 统一 `domain`，不用 `model`/`entity` |
-| 实体类 | `{Name}`，全部继承 `BaseEntity` |
+| 实体类 | `{Name}`；按真实字段选择基础类，admin 审计实体使用 `AdminAuditedEntity`，关系表不强制继承 |
 | DTO | `{Name}DTO`，放 `dto/` 包 |
 | VO | `{Name}VO`，放 `vo/` 包 |
 | Request | `{Action}Request`，放 `request/` 包 |
-| Service | `{Name}Service` + `{Name}ServiceImpl` |
+| Service | 应用编排使用 `{Name}ApplicationService`；仅有多实现边界时才建接口，不机械增加 Impl |
 | Mapper | `{Entity}Mapper` |
+| Java 文件 | 与唯一顶层类型同名，使用 PascalCase；Request/DTO/VO 写明资源和用途 |
+| Spring 配置 | `{Name}Configuration`；领域配置值对象仍可使用 `Config` |
 | Feign | `Inner{Resource}Client` 或 `{Module}FeignClient` |
+| Vue 页面 | PascalCase + `Page.vue`；普通 TS 模块使用 kebab-case，composable 为 `useCamelCase.ts` |
 | URL | 内部 `/inner/{module}/{resource}`，管理 `/api/admin/{module}/{resource}` |
 | 注入 | `@RequiredArgsConstructor`，不用 `@Autowired` |
 | 响应 | 不用 `Response` 后缀，用 `DTO` 或 `VO` |
-| 跨域 | 不直接注入对方 Mapper，走 Feign 接口 |
+| 跨域 | 本地领域通过提供者 Port，远程 Feign 位于 infrastructure；不直接注入对方 Mapper/业务服务 |
