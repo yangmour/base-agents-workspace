@@ -32,3 +32,6 @@ browser-input-assistant/
 xq-images
 
 .gstack/
+
+# 本地头脑风暴会话（包含临时令牌与服务状态）
+.superpowers/
