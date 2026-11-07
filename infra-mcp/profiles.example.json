@@ -1,0 +1,110 @@
+{
+  "profiles": {
+    "redis": {
+      "local-full": {
+        "environment": "local",
+        "host": "127.0.0.1",
+        "port": 6379,
+        "db": 0,
+        "scope": {"key_patterns": ["app:*"]}
+      },
+      "prod-readonly": {
+        "environment": "production",
+        "host": "redis.example.invalid",
+        "port": 6379,
+        "tls": true,
+        "username": "mcp-reader",
+        "password_env": "INFRA_REDIS_PASSWORD",
+        "permissions": {"read": true},
+        "scope": {"key_patterns": ["app:*"]},
+        "timeout": 10
+      }
+    },
+    "rabbitmq": {
+      "local-full": {
+        "environment": "local",
+        "url": "http://127.0.0.1:15672",
+        "username": "guest",
+        "password_env": "INFRA_RABBITMQ_LOCAL_PASSWORD",
+        "scope": {"vhosts": ["/"]}
+      },
+      "prod-readonly": {
+        "environment": "production",
+        "url": "https://rabbitmq.example.invalid",
+        "username": "mcp-reader",
+        "password_file": "/secure/infra-mcp/rabbitmq-password",
+        "permissions": {"read": true},
+        "scope": {"vhosts": ["application"], "queues": ["app.*"], "exchanges": ["app.*"]}
+      }
+    },
+    "elasticsearch": {
+      "local-full": {
+        "environment": "local",
+        "url": "http://127.0.0.1:9200",
+        "scope": {"indices": ["app-*"]}
+      },
+      "prod-readonly": {
+        "environment": "production",
+        "url": "https://elasticsearch.example.invalid:9200",
+        "api_key_env": "INFRA_ES_API_KEY",
+        "permissions": {"read": true},
+        "scope": {"indices": ["app-logs-*"]}
+      }
+    },
+    "nacos": {
+      "local-full": {
+        "environment": "local",
+        "url": "http://127.0.0.1:8848/nacos",
+        "api_version": 3,
+        "scope": {"namespaces": ["public"], "groups": ["APP"], "data_ids": ["app.*"], "services": ["app-*"]}
+      },
+      "prod-readonly": {
+        "environment": "production",
+        "url": "https://nacos.example.invalid/nacos",
+        "token_file": "/secure/infra-mcp/nacos-access-token",
+        "permissions": {"read": true},
+        "scope": {"namespaces": ["namespace-id"], "groups": ["APP"], "data_ids": ["app.*"], "services": ["app-*"]}
+      }
+    },
+    "mysql": {
+      "local-full": {
+        "environment": "local",
+        "host": "127.0.0.1",
+        "port": 3306,
+        "username": "mcp-user",
+        "password_env": "INFRA_MYSQL_LOCAL_PASSWORD",
+        "database": "app",
+        "scope": {"databases": ["app"], "tables": ["app.*"]}
+      },
+      "prod-readonly": {
+        "environment": "production",
+        "host": "mysql.example.invalid",
+        "port": 3306,
+        "username": "mcp-reader",
+        "password_file": "/secure/infra-mcp/mysql-password",
+        "database": "app",
+        "tls": true,
+        "permissions": {"read": true},
+        "scope": {"databases": ["app"], "tables": ["app.*"]}
+      }
+    },
+    "kubernetes": {
+      "session-full": {
+        "environment": "isolated-session",
+        "kubeconfig": "/run/infra-mcp/session/subadminconfig",
+        "context": "ai-session-id-from-receipt",
+        "scope": {
+          "namespaces": ["ai-isolated"],
+          "resources": ["pods", "services", "configmaps", "deployments", "statefulsets", "daemonsets", "jobs", "cronjobs", "ingresses", "events"]
+        }
+      },
+      "session-readonly": {
+        "environment": "isolated-session",
+        "kubeconfig": "/run/infra-mcp/readonly-session/subadminconfig",
+        "context": "ai-readonly-session-id-from-receipt",
+        "permissions": {"read": true},
+        "scope": {"namespaces": ["ai-isolated"], "resources": ["pods", "deployments", "events"]}
+      }
+    }
+  }
+}

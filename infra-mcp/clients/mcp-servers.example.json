@@ -1,0 +1,58 @@
+{
+  "mcpServers": {
+    "infra-redis": {
+      "command": "/bin/sh",
+      "args": [
+        "/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh",
+        "redis",
+        "--config",
+        "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"
+      ]
+    },
+    "infra-rabbitmq": {
+      "command": "/bin/sh",
+      "args": [
+        "/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh",
+        "rabbitmq",
+        "--config",
+        "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"
+      ]
+    },
+    "infra-elasticsearch": {
+      "command": "/bin/sh",
+      "args": [
+        "/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh",
+        "elasticsearch",
+        "--config",
+        "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"
+      ]
+    },
+    "infra-kubernetes": {
+      "command": "/bin/sh",
+      "args": [
+        "/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh",
+        "kubernetes",
+        "--config",
+        "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"
+      ]
+    },
+    "infra-nacos": {
+      "command": "/bin/sh",
+      "args": [
+        "/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh",
+        "nacos",
+        "--config",
+        "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"
+      ]
+    },
+    "infra-mysql": {
+      "command": "/bin/sh",
+      "args": [
+        "/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh",
+        "mysql",
+        "--config",
+        "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"
+      ]
+    }
+  }
+}

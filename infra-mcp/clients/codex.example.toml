@@ -1,0 +1,26 @@
+# Merge these blocks into your Codex config; do not replace existing settings.
+# Paths below refer to this machine. Update them if the project moves again.
+
+[mcp_servers.infra-redis]
+command = "/bin/sh"
+args = ["/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh", "redis", "--config", "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"]
+
+[mcp_servers.infra-rabbitmq]
+command = "/bin/sh"
+args = ["/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh", "rabbitmq", "--config", "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"]
+
+[mcp_servers.infra-elasticsearch]
+command = "/bin/sh"
+args = ["/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh", "elasticsearch", "--config", "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"]
+
+[mcp_servers.infra-kubernetes]
+command = "/bin/sh"
+args = ["/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh", "kubernetes", "--config", "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"]
+
+[mcp_servers.infra-nacos]
+command = "/bin/sh"
+args = ["/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh", "nacos", "--config", "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"]
+
+[mcp_servers.infra-mysql]
+command = "/bin/sh"
+args = ["/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh", "mysql", "--config", "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"]
