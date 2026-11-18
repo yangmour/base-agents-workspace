@@ -32,7 +32,7 @@
         "environment": "production",
         "url": "https://rabbitmq.example.invalid",
         "username": "mcp-reader",
-        "password_file": "/secure/infra-mcp/rabbitmq-password",
+        "password_file": ".secrets/rabbitmq-password",
         "permissions": {"read": true},
         "scope": {"vhosts": ["application"], "queues": ["app.*"], "exchanges": ["app.*"]}
       }
@@ -61,7 +61,7 @@
       "prod-readonly": {
         "environment": "production",
         "url": "https://nacos.example.invalid/nacos",
-        "token_file": "/secure/infra-mcp/nacos-access-token",
+        "token_file": ".secrets/nacos-access-token",
         "permissions": {"read": true},
         "scope": {"namespaces": ["namespace-id"], "groups": ["APP"], "data_ids": ["app.*"], "services": ["app-*"]}
       }
@@ -81,7 +81,7 @@
         "host": "mysql.example.invalid",
         "port": 3306,
         "username": "mcp-reader",
-        "password_file": "/secure/infra-mcp/mysql-password",
+        "password_file": ".secrets/mysql-password",
         "database": "app",
         "tls": true,
         "permissions": {"read": true},
@@ -114,7 +114,7 @@
     "kubernetes": {
       "session-full": {
         "environment": "isolated-session",
-        "kubeconfig": "/run/infra-mcp/session/subadminconfig",
+        "kubeconfig": "sessions/session-id/client/subadminconfig",
         "context": "ai-session-id-from-receipt",
         "scope": {
           "namespaces": ["ai-isolated"],
@@ -123,7 +123,7 @@
       },
       "session-readonly": {
         "environment": "isolated-session",
-        "kubeconfig": "/run/infra-mcp/readonly-session/subadminconfig",
+        "kubeconfig": "sessions/readonly-session-id/client/subadminconfig",
         "context": "ai-readonly-session-id-from-receipt",
         "permissions": {"read": true},
         "scope": {"namespaces": ["ai-isolated"], "resources": ["pods", "deployments", "events"]}

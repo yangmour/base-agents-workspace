@@ -15,38 +15,42 @@ Redis、RabbitMQ、Elasticsearch、Kubernetes、Nacos 3.x、MySQL、RocketMQ 七
 
 ## 安装与配置
 
-需要 Python 3.12+、uv；使用 Kubernetes 还需要 PATH 中有 `kubectl`。
+需要 Python 3.12+ 和 uv。Kubernetes 需要 PATH 中有 `kubectl`。
+在项目目录下安装客户端使用的命令，再创建连接配置。
 
 ```bash
-cd /Users/mia/Desktop/dev/code/case/infra-mcp
-uv sync --frozen
+uv tool install .
+uv tool update-shell
 
-# 仅首次创建；已有 profiles.json 时直接编辑，不覆盖原配置
-if [ ! -e profiles.json ]; then
-  cp profiles.example.json profiles.json
+config_dir="$HOME/.config/infra-mcp"
+mkdir -p "$config_dir"
+if [ ! -e "$config_dir/profiles.json" ]; then
+  (umask 077 && cp profiles.example.json "$config_dir/profiles.json")
 fi
-chmod 600 profiles.json
 ```
 
-编辑 [profiles.example.json](profiles.example.json) 对应的 `profiles.json`，填写实际地址、连接名、凭据引用和权限。
-示例地址、路径、账号需要替换。密码使用 `password_env` 或 `password_file`；不支持在 JSON 内写明文密码。
-桌面客户端可能不继承终端环境变量，跨客户端共用时可使用私有文件引用。
+编辑 `$HOME/.config/infra-mcp/profiles.json`，填写实际地址、连接名、凭据引用和权限。
+密码使用 `password_env` 或 `password_file`。密码文件、令牌文件、`ca_file` 和 `kubeconfig` 的相对路径以配置文件所在目录为基准，也可使用绝对路径或 `~/`。
+例如，`.secrets/mysql-password` 指向配置文件旁的 `.secrets` 目录。跨客户端共用时可使用这些私有文件引用。[配置示例](profiles.example.json)
 
-统一启动方式：
+客户端可调用 `infra-mcp mysql`。指定其他配置时传 `--config "$profile_file"`，或设置环境变量 `INFRA_MCP_CONFIG`。
+将服务名替换为 `redis`、`rabbitmq`、`elasticsearch`、`kubernetes`、`nacos` 或 `rocketmq` 即可启动相应服务。
+手工启动后等待输入是 stdio 的正常状态。没有配置文件时，`list_connections` 返回 `configuration_needed: true`。
+
+从源码运行时，在项目目录创建虚拟环境，再用项目启动脚本。
 
 ```bash
-/bin/sh scripts/launch.sh mysql --config /absolute/profiles.json
+uv sync --frozen
+./scripts/launch.sh mysql
 ```
 
-将 `mysql` 替换为 `redis`、`rabbitmq`、`elasticsearch`、`kubernetes`、`nacos` 或 `rocketmq`。
-通常由 MCP 客户端启动进程；手工启动后等待输入是 stdio 的正常状态。
-`launch.sh` 默认读项目根目录 `profiles.json`，也可通过 `INFRA_MCP_CONFIG` 或 `--config` 指定。
-没有配置文件时仍能启动，`list_connections` 返回 `configuration_needed: true`。
+`launch.sh` 从脚本位置定位项目，默认读取项目根目录的 `profiles.json`。可从示例复制一份，也可传 `--config`。
+项目迁移后在新目录重建源码虚拟环境。已安装的工具从自己的环境运行。
 
 ## 客户端接入
 
-服务的启动参数均使用绝对路径，不依赖客户端当前打开的项目。
-移动项目或换机器后，先移走旧 `.venv`，再运行 `uv sync --frozen` 创建新环境，并更新客户端配置中的路径。
+三个客户端模板都通过 PATH 查找 `infra-mcp`，启动参数只需要服务名。
+执行 `uv tool update-shell` 后打开新终端，用 `command -v infra-mcp` 检查。桌面客户端若使用独立的 PATH，可把该命令返回的实际路径填到客户端配置的 `command` 中。
 
 ### Codex
 
@@ -56,13 +60,11 @@ chmod 600 profiles.json
 codex mcp list
 for service in redis rabbitmq elasticsearch kubernetes nacos mysql rocketmq
 do
-  codex mcp add "infra-$service" -- \
-    /bin/sh /Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh \
-    "$service" --config /Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json
+  codex mcp add "infra-$service" -- infra-mcp "$service"
 done
 ```
 
-若已有同名注册，更新原条目即可，保留其他配置。[官方说明](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)
+若已有同名注册，将原条目的启动命令换成模板中的命令。仍用原连接配置时，把它的路径作为 `--config` 参数传入。[官方说明](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)
 
 ### Claude Code
 
@@ -72,9 +74,7 @@ done
 claude mcp list
 for service in redis rabbitmq elasticsearch kubernetes nacos mysql rocketmq
 do
-  claude mcp add --transport stdio --scope user "infra-$service" -- \
-    /bin/sh /Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh \
-    "$service" --config /Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json
+  claude mcp add --transport stdio --scope user "infra-$service" -- infra-mcp "$service"
 done
 ```
 
@@ -87,7 +87,7 @@ done
 使用 [DSH YAML 模板](clients/dsh.cordis.patch.yml)：
 
 ```bash
-dsh web --patch /Users/mia/Desktop/dev/code/case/infra-mcp/clients/dsh.cordis.patch.yml
+dsh web --patch "$(pwd -P)/clients/dsh.cordis.patch.yml"
 ```
 
 长期启用时，将模板的 `insert` 合并到实际 `$DSH_HOME/cordis.patch.yml`；
@@ -124,13 +124,13 @@ env:
         "host": "127.0.0.1",
         "port": 3306,
         "username": "mcp-user",
-        "password_file": "/secure/mysql-password",
+        "password_file": ".secrets/mysql-password",
         "database": "app"
       },
       "prod-readonly": {
         "host": "mysql.example.invalid",
         "username": "mcp-reader",
-        "password_file": "/secure/mysql-reader-password",
+        "password_file": ".secrets/mysql-reader-password",
         "database": "app",
         "tls": true,
         "permissions": {"read": true},
@@ -307,12 +307,11 @@ JSON 列可传 JSON 字符串，DECIMAL 可传十进制字符串以保留精度�
 
 ### 签发与使用
 
-namespace 必须已存在。替换管理员文件路径后运行：
+namespace 必须已存在。在项目目录运行，先把 `ADMIN_CONFIG` 设置为管理员 kubeconfig 的实际路径。
 
 ```bash
-cd /Users/mia/Desktop/dev/code/case/infra-mcp
-ADMIN_CONFIG='/absolute/adminconfig'
-STATE_ROOT='/Users/mia/Desktop/dev/code/case/infra-mcp/sessions'
+: "${ADMIN_CONFIG:?请先设置管理员 kubeconfig 路径}"
+STATE_ROOT="${STATE_ROOT:-$(pwd -P)/sessions}"
 
 .venv/bin/python scripts/k8s-session.py issue \
   --admin-config "$ADMIN_CONFIG" \
@@ -326,13 +325,13 @@ STATE_ROOT='/Users/mia/Desktop/dev/code/case/infra-mcp/sessions'
 权限同时写入 RBAC 和 MCP profile；需要先读再写的操作如 scale，应同时具备 read、update。
 
 签发返回会话目录，含管理员回执 `session.json`、子凭据 `client/subadminconfig`、MCP 配置 `client/profiles.json`。
-只把 client 中的文件交给 MCP，工具调用使用 `connection: "session"`。
+`profiles.json` 通过相对路径引用同目录的子凭据。把 `client/` 中的两个文件一起交给 MCP，工具调用使用 `connection: "session"`。
 
 ```bash
 SESSION_DIR="$STATE_ROOT/ai-替换为实际会话标识"
 .venv/bin/python scripts/k8s-session.py status --session-dir "$SESSION_DIR"
 
-/bin/sh scripts/launch.sh kubernetes \
+./scripts/launch.sh kubernetes \
   --config "$SESSION_DIR/client/profiles.json"
 ```
 
@@ -361,8 +360,8 @@ SESSION_DIR="$STATE_ROOT/ai-替换为实际会话标识"
 开放工作负载写权限前需配置 Admission 隔离，限制特权容器、主机挂载、Secret 挂载与高权限 SA；
 仅禁止直接读取 Secret 不足以隔离工作负载。已有其他 RBAC 授权也需管理员检查。
 
-会话路径不接受符号链接，macOS 临时目录使用 `/private/tmp`。这是单管理员主机 CLI；
-多 Pod 签发平台需要共享登记和独立协调，不能各用本地 sessions 目录充当共享平台。
+会话路径使用实际目录。若临时目录包含符号链接，先用 `pwd -P` 获取物理路径。
+这是单管理员主机 CLI，多 Pod 签发平台需要共享登记和独立协调。
 
 ## 输出限制与常见问题
 

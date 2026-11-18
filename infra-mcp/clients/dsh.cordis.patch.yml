@@ -5,82 +5,54 @@
     config:
       serverName: infra-redis
       transport: stdio
-      command: /bin/sh
+      command: infra-mcp
       args:
-      - /Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh
       - redis
-      - --config
-      - /Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json
-      cwd: /Users/mia/Desktop/dev/code/case/infra-mcp
   - id: infra-rabbitmq
     name: '@deepseek-ai/dsh-mcp-client'
     config:
       serverName: infra-rabbitmq
       transport: stdio
-      command: /bin/sh
+      command: infra-mcp
       args:
-      - /Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh
       - rabbitmq
-      - --config
-      - /Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json
-      cwd: /Users/mia/Desktop/dev/code/case/infra-mcp
   - id: infra-elasticsearch
     name: '@deepseek-ai/dsh-mcp-client'
     config:
       serverName: infra-elasticsearch
       transport: stdio
-      command: /bin/sh
+      command: infra-mcp
       args:
-      - /Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh
       - elasticsearch
-      - --config
-      - /Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json
-      cwd: /Users/mia/Desktop/dev/code/case/infra-mcp
   - id: infra-kubernetes
     name: '@deepseek-ai/dsh-mcp-client'
     config:
       serverName: infra-kubernetes
       transport: stdio
-      command: /bin/sh
+      command: infra-mcp
       args:
-      - /Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh
       - kubernetes
-      - --config
-      - /Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json
-      cwd: /Users/mia/Desktop/dev/code/case/infra-mcp
   - id: infra-nacos
     name: '@deepseek-ai/dsh-mcp-client'
     config:
       serverName: infra-nacos
       transport: stdio
-      command: /bin/sh
+      command: infra-mcp
       args:
-      - /Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh
       - nacos
-      - --config
-      - /Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json
-      cwd: /Users/mia/Desktop/dev/code/case/infra-mcp
   - id: infra-mysql
     name: '@deepseek-ai/dsh-mcp-client'
     config:
       serverName: infra-mysql
       transport: stdio
-      command: /bin/sh
+      command: infra-mcp
       args:
-      - /Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh
       - mysql
-      - --config
-      - /Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json
-      cwd: /Users/mia/Desktop/dev/code/case/infra-mcp
   - id: infra-rocketmq
     name: '@deepseek-ai/dsh-mcp-client'
     config:
       serverName: infra-rocketmq
       transport: stdio
-      command: /bin/sh
+      command: infra-mcp
       args:
-      - /Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh
       - rocketmq
-      - --config
-      - /Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json
-      cwd: /Users/mia/Desktop/dev/code/case/infra-mcp

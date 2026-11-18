@@ -1,66 +1,45 @@
 {
   "mcpServers": {
     "infra-redis": {
-      "command": "/bin/sh",
+      "command": "infra-mcp",
       "args": [
-        "/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh",
-        "redis",
-        "--config",
-        "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"
+        "redis"
       ]
     },
     "infra-rabbitmq": {
-      "command": "/bin/sh",
+      "command": "infra-mcp",
       "args": [
-        "/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh",
-        "rabbitmq",
-        "--config",
-        "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"
+        "rabbitmq"
       ]
     },
     "infra-elasticsearch": {
-      "command": "/bin/sh",
+      "command": "infra-mcp",
       "args": [
-        "/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh",
-        "elasticsearch",
-        "--config",
-        "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"
+        "elasticsearch"
       ]
     },
     "infra-kubernetes": {
-      "command": "/bin/sh",
+      "command": "infra-mcp",
       "args": [
-        "/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh",
-        "kubernetes",
-        "--config",
-        "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"
+        "kubernetes"
       ]
     },
     "infra-nacos": {
-      "command": "/bin/sh",
+      "command": "infra-mcp",
       "args": [
-        "/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh",
-        "nacos",
-        "--config",
-        "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"
+        "nacos"
       ]
     },
     "infra-mysql": {
-      "command": "/bin/sh",
+      "command": "infra-mcp",
       "args": [
-        "/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh",
-        "mysql",
-        "--config",
-        "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"
+        "mysql"
       ]
     },
     "infra-rocketmq": {
-      "command": "/bin/sh",
+      "command": "infra-mcp",
       "args": [
-        "/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh",
-        "rocketmq",
-        "--config",
-        "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"
+        "rocketmq"
       ]
     }
   }

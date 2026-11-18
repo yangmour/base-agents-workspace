@@ -10,6 +10,7 @@ from typing import Any
 
 ACTIONS = frozenset({"create", "read", "update", "delete"})
 SERVICES = frozenset({"redis", "rabbitmq", "elasticsearch", "kubernetes", "nacos", "mysql", "rocketmq"})
+FILE_OPTIONS = frozenset({"username_file", "password_file", "api_key_file", "token_file", "ca_file", "kubeconfig"})
 
 
 class InfraError(Exception):
@@ -73,7 +74,7 @@ def _unique_object(pairs):
 
 class ConfigStore:
     def __init__(self, path: str | Path):
-        self.path = Path(path).expanduser()
+        self.path = Path(path).expanduser().absolute()
 
     def profiles(self, service: str) -> dict[str, Profile]:
         if service not in SERVICES:
@@ -128,6 +129,14 @@ class ConfigStore:
             if key in raw and type(raw[key]) is not bool:
                 raise InfraError("invalid_config", f"{key} must be a boolean")
         options = {k: v for k, v in raw.items() if k not in {"scope", "permissions"}}
+        # Clients can start the same server from different working directories.
+        for key in FILE_OPTIONS & options.keys():
+            value = options[key]
+            if isinstance(value, str) and value.strip():
+                try:
+                    options[key] = str(self.path.parent / Path(value).expanduser())
+                except RuntimeError:
+                    raise InfraError("invalid_config", f"Cannot expand home directory in {key}") from None
         profile = Profile(name, service, options, permitted, scope)
         _ = profile.timeout
         integer(options, "max_output_bytes", 131072, 1024, 1048576)

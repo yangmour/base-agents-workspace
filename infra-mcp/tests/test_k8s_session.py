@@ -96,6 +96,7 @@ def test_issue_retains_independent_credential_and_actual_expiry(cli, tmp_path, h
     assert child['users'][0]['user'] == {'token': 'CHILD-SECRET'}
     assert 'ADMIN' not in json.dumps(child)
     assert 'exec' not in json.dumps(child)
+    assert profile['kubeconfig'] == 'subadminconfig'
     assert profile['context'] == path.name
     assert profile['scope'] == {'namespaces': ['existing'], 'resources': ['configmaps']}
     assert profile['permissions'] == dict.fromkeys(['create', 'read', 'update', 'delete'], True)

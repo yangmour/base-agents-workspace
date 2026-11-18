@@ -417,7 +417,7 @@ def issue(backend, state_root, namespace, resources=None, permissions=None):
                      'clusters': [{'name': 'session-cluster', 'cluster': cluster}],
                      'users': [{'name': name, 'user': {'token': token}}],
                      'contexts': [{'name': name, 'context': {'cluster': 'session-cluster', 'user': name, 'namespace': namespace}}]}
-            profile = {'kubeconfig': str(client / 'subadminconfig'), 'context': name, 'timeout': 20,
+            profile = {'kubeconfig': 'subadminconfig', 'context': name, 'timeout': 20,
                        'permissions': {key: key in permissions for key in PERMISSIONS},
                        'scope': {'namespaces': [namespace], 'resources': resources}}
             private_json(client / 'subadminconfig', child)

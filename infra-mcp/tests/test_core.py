@@ -36,6 +36,27 @@ def test_absent_permissions_enables_all_crud(tmp_path):
     assert p.permissions == frozenset({"create", "read", "update", "delete"})
 
 
+def test_file_references_use_config_directory_after_working_directory_changes(tmp_path, monkeypatch):
+    profile_dir = tmp_path / "local profiles"
+    profile_dir.mkdir()
+    (profile_dir / "password").write_text("test-secret\n")
+    absolute_ca = tmp_path / "ca.pem"
+    monkeypatch.chdir(tmp_path)
+    path = profile_dir / "profiles.json"
+    path.write_text(json.dumps({"profiles": {
+        "redis": {"local": {"password_file": "password", "ca_file": str(absolute_ca)}},
+        "kubernetes": {"session": {"kubeconfig": "client/subadminconfig", "context": "session"}},
+    }}))
+    config = ConfigStore(path.relative_to(tmp_path))
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    redis = config.get("redis", "local")
+    assert secret(redis, "password") == "test-secret"
+    assert redis.options["ca_file"] == str(absolute_ca)
+    assert config.get("kubernetes", "session").options["kubeconfig"] == str(profile_dir / "client/subadminconfig")
+
+
 def test_mysql_connections_have_independent_crud_permissions(tmp_path):
     path = tmp_path / "mysql.json"
     path.write_text(json.dumps({"profiles": {"mysql": {

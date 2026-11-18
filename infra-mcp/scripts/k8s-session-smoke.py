@@ -201,7 +201,7 @@ class Trial:
             "clusters": [{"name": "session-cluster", "cluster": child_cluster}],
             "users": [{"name": self.session, "user": {"token": status["token"]}}],
             "contexts": [{"name": self.session, "context": {"cluster": "session-cluster", "user": self.session, "namespace": ns}}]}
-        session_profile = {"kubeconfig": str(self.child_config), "context": self.session, "timeout": 20,
+        session_profile = {"kubeconfig": self.child_config.name, "context": self.session, "timeout": 20,
                            "permissions": {key: True for key in ("create", "read", "update", "delete")},
                            "scope": {"namespaces": [ns], "resources": ["configmaps"]}}
         profiles = {"profiles": {"kubernetes": {"trial": session_profile}}}
