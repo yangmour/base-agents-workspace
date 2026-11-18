@@ -72,3 +72,15 @@
       - --config
       - /Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json
       cwd: /Users/mia/Desktop/dev/code/case/infra-mcp
+  - id: infra-rocketmq
+    name: '@deepseek-ai/dsh-mcp-client'
+    config:
+      serverName: infra-rocketmq
+      transport: stdio
+      command: /bin/sh
+      args:
+      - /Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh
+      - rocketmq
+      - --config
+      - /Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json
+      cwd: /Users/mia/Desktop/dev/code/case/infra-mcp

@@ -88,6 +88,29 @@
         "scope": {"databases": ["app"], "tables": ["app.*"]}
       }
     },
+    "rocketmq": {
+      "local": {
+        "environment": "local",
+        "url": "http://127.0.0.1:18082",
+        "cluster": "MoxingLocal",
+        "scope": {
+          "topics": [
+            "app-*"
+          ],
+          "groups": [
+            "app-*"
+          ]
+        }
+      },
+      "prod-readonly": {
+        "environment": "production",
+        "url": "https://rocketmq.example.invalid",
+        "cluster": "Production",
+        "permissions": {
+          "read": true
+        }
+      }
+    },
     "kubernetes": {
       "session-full": {
         "environment": "isolated-session",

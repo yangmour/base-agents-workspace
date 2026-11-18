@@ -10,7 +10,8 @@ import httpx
 from .config import InfraError, Profile, integer, secret
 
 
-def request_json(profile: Profile, method: str, path: str, *, json=None, params=None, data=None, headers=None):
+def request_json(profile: Profile, method: str, path: str, *, json=None, params=None, data=None, headers=None,
+                 csrf_path=None):
     base = profile.options.get("url")
     if not isinstance(base, str):
         raise InfraError("invalid_config", "An HTTP url is required")
@@ -23,8 +24,10 @@ def request_json(profile: Profile, method: str, path: str, *, json=None, params=
         valid = False
     if not valid or any(ord(c) < 32 for c in base) or "\\" in base:
         raise InfraError("invalid_config", "url must be HTTP(S) without embedded credentials, query, or fragment")
-    if not isinstance(path, str) or not path.startswith("/") or path.startswith("//") or any(c in path for c in "?#\\"):
-        raise InfraError("invalid_argument", "Invalid backend path")
+    for endpoint in (path,) if csrf_path is None else (path, csrf_path):
+        if (not isinstance(endpoint, str) or not endpoint.startswith("/") or endpoint.startswith("//")
+                or any(c in endpoint for c in "?#\\")):
+            raise InfraError("invalid_argument", "Invalid backend path")
     maximum = integer(profile.options, "max_response_bytes", 1048576, 1024, 16777216)
     username = profile.options.get("username")
     if username is None:
@@ -58,7 +61,23 @@ def request_json(profile: Profile, method: str, path: str, *, json=None, params=
         with httpx.Client(timeout=profile.timeout, follow_redirects=False, verify=verify,
                           auth=(username, password or "") if username is not None else None,
                           headers=request_headers, trust_env=False) as client:
-            with client.stream(method, base.rstrip("/") + path, json=json, params=params, data=data) as response:
+            write_headers = None
+            if csrf_path is not None:
+                try:
+                    # Dashboard versions with CSRF issue a cookie from this
+                    # fixed GET endpoint. Keep its value in this request session.
+                    with client.stream("GET", base.rstrip("/") + csrf_path) as csrf:
+                        if csrf.is_success:
+                            token = csrf.cookies.get("XSRF-TOKEN")
+                            if not token or len(token) > 4096 or not token.isascii() or not token.isprintable():
+                                raise InfraError("csrf_failed", "Dashboard did not issue a valid CSRF cookie")
+                            write_headers = {"X-XSRF-TOKEN": token}
+                        elif csrf.status_code != 404:
+                            raise InfraError("csrf_failed", "Dashboard CSRF request was rejected")
+                except (httpx.HTTPError, httpx.CookieConflict, ValueError):
+                    raise InfraError("csrf_failed", "Dashboard CSRF request failed") from None
+            with client.stream(method, base.rstrip("/") + path, json=json, params=params, data=data,
+                               headers=write_headers) as response:
                 if not 200 <= response.status_code < 300:
                     raise InfraError("backend_http_error", f"Backend returned HTTP {response.status_code}; response body withheld")
                 body = bytearray()

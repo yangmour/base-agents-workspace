@@ -24,3 +24,7 @@ args = ["/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh", "nacos",
 [mcp_servers.infra-mysql]
 command = "/bin/sh"
 args = ["/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh", "mysql", "--config", "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"]
+
+[mcp_servers.infra-rocketmq]
+command = "/bin/sh"
+args = ["/Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh", "rocketmq", "--config", "/Users/mia/Desktop/dev/code/case/infra-mcp/profiles.json"]

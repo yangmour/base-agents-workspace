@@ -56,6 +56,31 @@ def test_redirect_not_followed(monkeypatch):
     assert len(calls) == 1
 
 
+def test_csrf_bootstrap_and_write_use_same_session(monkeypatch):
+    calls = []
+
+    def respond(request):
+        calls.append(request)
+        if request.method == "GET":
+            return httpx.Response(200, headers={"set-cookie": "XSRF-TOKEN=fixture; Path=/"})
+        assert request.headers["x-xsrf-token"] == "fixture"
+        assert "XSRF-TOKEN=fixture" in request.headers["cookie"]
+        return httpx.Response(200, json={"ok": True})
+
+    install_transport(monkeypatch, respond)
+    assert request_json(profile(), "POST", "/write", csrf_path="/csrf") == {"ok": True}
+    assert [(r.method, r.url.path) for r in calls] == [("GET", "/csrf"), ("POST", "/write")]
+
+
+def test_csrf_bootstrap_denial_stops_write(monkeypatch):
+    calls = []
+    install_transport(monkeypatch, lambda req: calls.append(req) or httpx.Response(403))
+    with pytest.raises(InfraError) as error:
+        request_json(profile(), "POST", "/write", csrf_path="/csrf")
+    assert error.value.code == "csrf_failed"
+    assert [r.method for r in calls] == ["GET"]
+
+
 def test_response_body_capped_while_reading(monkeypatch):
     install_transport(monkeypatch, lambda req: httpx.Response(200, content=b"x" * 4096))
     with pytest.raises(InfraError, match="limit"):

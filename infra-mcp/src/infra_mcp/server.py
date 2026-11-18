@@ -21,10 +21,11 @@ def build_server(service: str, config_path: str | Path) -> FastMCP:
     from .kubernetes_service import KubernetesService
     from .nacos_service import NacosService
     from .mysql_service import MySQLService
+    from .rocketmq_service import RocketMQService
 
     classes = {"redis": RedisService, "rabbitmq": RabbitMQService,
                "elasticsearch": ElasticsearchService, "kubernetes": KubernetesService,
-               "nacos": NacosService, "mysql": MySQLService}
+               "nacos": NacosService, "mysql": MySQLService, "rocketmq": RocketMQService}
     backend = classes[service](ConfigStore(config_path))
     mcp = FastMCP(f"infra-{service}", instructions=(
         "Infrastructure operations. First list_connections and list_operations; always select an explicit connection. "
@@ -83,7 +84,7 @@ def build_server(service: str, config_path: str | Path) -> FastMCP:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Redis, RabbitMQ, Elasticsearch, Kubernetes, Nacos and MySQL MCP")
+    parser = argparse.ArgumentParser(description="Redis, RabbitMQ, Elasticsearch, Kubernetes, Nacos, MySQL and RocketMQ MCP")
     parser.add_argument("service", choices=sorted(SERVICES))
     parser.add_argument("--config", type=Path, default=Path(os.environ.get(
         "INFRA_MCP_CONFIG", str(Path.home() / ".config/infra-mcp/profiles.json"))))

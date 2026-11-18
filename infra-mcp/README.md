@@ -1,6 +1,6 @@
 # Infra MCP 使用说明
 
-Redis、RabbitMQ、Elasticsearch、Kubernetes、Nacos 3.x、MySQL 六个独立 stdio MCP。
+Redis、RabbitMQ、Elasticsearch、Kubernetes、Nacos 3.x、MySQL、RocketMQ 七个独立 stdio MCP。
 每个服务支持多个命名连接，每个连接独立控制增删改查权限。客户端调用时必须指定 `connection`。
 
 - [安装与配置](#安装与配置)
@@ -9,6 +9,7 @@ Redis、RabbitMQ、Elasticsearch、Kubernetes、Nacos 3.x、MySQL 六个独立 s
 - [工具调用](#工具调用)
 - [MySQL 使用](#mysql-使用)
 - [Nacos 使用](#nacos-使用)
+- [RocketMQ 使用](#rocketmq-使用)
 - [K8s 一天临时凭据](#k8s-一天临时凭据)
 - [输出限制与常见问题](#输出限制与常见问题)
 
@@ -37,14 +38,14 @@ chmod 600 profiles.json
 /bin/sh scripts/launch.sh mysql --config /absolute/profiles.json
 ```
 
-将 `mysql` 替换为 `redis`、`rabbitmq`、`elasticsearch`、`kubernetes` 或 `nacos`。
+将 `mysql` 替换为 `redis`、`rabbitmq`、`elasticsearch`、`kubernetes`、`nacos` 或 `rocketmq`。
 通常由 MCP 客户端启动进程；手工启动后等待输入是 stdio 的正常状态。
 `launch.sh` 默认读项目根目录 `profiles.json`，也可通过 `INFRA_MCP_CONFIG` 或 `--config` 指定。
 没有配置文件时仍能启动，`list_connections` 返回 `configuration_needed: true`。
 
 ## 客户端接入
 
-六个服务的启动参数均使用绝对路径，不依赖客户端当前打开的项目。
+服务的启动参数均使用绝对路径，不依赖客户端当前打开的项目。
 移动项目或换机器后，先移走旧 `.venv`，再运行 `uv sync --frozen` 创建新环境，并更新客户端配置中的路径。
 
 ### Codex
@@ -53,7 +54,7 @@ chmod 600 profiles.json
 
 ```bash
 codex mcp list
-for service in redis rabbitmq elasticsearch kubernetes nacos mysql
+for service in redis rabbitmq elasticsearch kubernetes nacos mysql rocketmq
 do
   codex mcp add "infra-$service" -- \
     /bin/sh /Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh \
@@ -69,7 +70,7 @@ done
 
 ```bash
 claude mcp list
-for service in redis rabbitmq elasticsearch kubernetes nacos mysql
+for service in redis rabbitmq elasticsearch kubernetes nacos mysql rocketmq
 do
   claude mcp add --transport stdio --scope user "infra-$service" -- \
     /bin/sh /Users/mia/Desktop/dev/code/case/infra-mcp/scripts/launch.sh \
@@ -157,9 +158,10 @@ env:
 | Kubernetes | namespaces、resources、names | `["ai-isolated"]`、`["configmaps"]` |
 | Nacos | namespaces、groups、data_ids、services | `["public"]`、`["APP"]`、`["app.*"]`、`["app-*"]` |
 | MySQL | databases、tables | `["app"]`、`["app.*"]`；表使用完整的库名.表名 |
+| RocketMQ | topics、groups | `["app-*"]`、`["app-*"]` |
 
 混合操作需要两项权限：Redis `hash_set`、RabbitMQ 声明队列/交换机及更新策略、
-Nacos `publish_config/register_instance/update_instance` 同时要求 create 和 update。
+Nacos `publish_config/register_instance/update_instance` 和 RocketMQ 的 Topic、消费组新增与修改同时要求 create 和 update。
 RabbitMQ `consume` 会确认并移走消息，和 `purge_queue` 一样归 delete。
 
 ## 工具调用
@@ -179,6 +181,7 @@ RabbitMQ `consume` 会确认并移走消息，和 `purge_queue` 一样归 delete
 | Kubernetes | list、get、logs | create | patch、restart、scale | delete |
 | Nacos | get_config、list_configs、get_service、list_services、get_instance、list_instances | publish_config、create_service、register_instance | update_service、update_instance | delete_config、delete_service、deregister_instance |
 | MySQL | list_databases、list_tables、describe_table、select_rows | insert_row | update_row | delete_row |
+| RocketMQ | list_topics、get_topic、topic_stats、list_groups、get_group | create_topic、create_group、send_message | update_topic、update_group | delete_topic、delete_group |
 
 常用调用示例，分别交给表中对应工具：
 
@@ -261,6 +264,41 @@ JSON 列可传 JSON 字符串，DECIMAL 可传十进制字符串以保留精度�
 - `update_service` 必须同时提供 metadata、protect_threshold、selector；selector 为 `{"type":"none"}` 或 `{"type":"label","expression":"表达式"}`。
 - 更新采用完整替换，需要保留的 metadata 字段也必须提交；不提供 CAS 保证。
 - 实例 ephemeral 默认 true，本 MCP 不维持心跳；持久实例需显式设为 false 并与服务类型匹配。
+
+## RocketMQ 使用
+
+在 `profiles.rocketmq` 下添加连接。每个连接使用 RocketMQ Dashboard 2.1 的 HTTP 地址和确切的集群名。该 Dashboard 应只管理这个集群。
+
+```json
+{
+  "profiles": {
+    "rocketmq": {
+      "local": {
+        "url": "http://127.0.0.1:18082",
+        "cluster": "MoxingLocal",
+        "scope": {"topics": ["app-*"], "groups": ["app-*"]}
+      }
+    }
+  }
+}
+```
+
+使用本机或受信任内网的 Dashboard。此入口支持 Dashboard 无登录模式，也可沿用项目 HTTP 选项为受信任的反向代理提供认证。Dashboard 内置网页登录暂未接入。写请求会按 Dashboard 要求先取得 CSRF Cookie。
+
+新增 Topic 和发送普通消息时分别调用 `create` 工具。发送的目标必须是已有的 `NORMAL` Topic。
+
+```json
+{"connection":"local","operation":"create_topic","arguments":{"topic":"app-test","read_queues":2,"write_queues":2,"permission":6,"message_type":"NORMAL"}}
+```
+
+```json
+{"connection":"local","operation":"send_message","arguments":{"topic":"app-test","body":"hello","key":"sample-1","tag":"demo"}}
+```
+
+- `update_topic` 需要显式提供读写队列数、`permission`、`message_type` 和布尔值 `ordered`。先用 `get_topic` 查看现有值。Broker 会校验是否允许所请求的变更。
+- 消费组使用 `group` 参数，可配置 `consume_enabled`、`ordered` 和 `retry_max_times`。`update_group` 保留未指定的字段。`list_groups` 使用 Dashboard 缓存，刚写入的配置以 `get_group` 回读为准。
+- 删除消费组可能同时移除消费位点、重试队列和死信队列。多 Broker 写入可能部分成功，发生异常或收到 `outcome_unknown` 后先核对实际状态再重试。
+- `list_topics`、`list_groups` 使用 `limit` 和 `offset` 翻页。系统 Topic 和消费组不在操作范围内。
 
 ## K8s 一天临时凭据
 

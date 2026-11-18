@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 ACTIONS = frozenset({"create", "read", "update", "delete"})
-SERVICES = frozenset({"redis", "rabbitmq", "elasticsearch", "kubernetes", "nacos", "mysql"})
+SERVICES = frozenset({"redis", "rabbitmq", "elasticsearch", "kubernetes", "nacos", "mysql", "rocketmq"})
 
 
 class InfraError(Exception):
@@ -113,6 +113,7 @@ class ConfigStore:
             "elasticsearch": {"indices"}, "kubernetes": {"namespaces", "resources", "names"},
             "nacos": {"namespaces", "groups", "data_ids", "services"},
             "mysql": {"databases", "tables"},
+            "rocketmq": {"topics", "groups"},
         }[service]
         if not isinstance(scope, dict) or set(scope) - allowed_scope_keys:
             raise InfraError("invalid_config", "Invalid resource scope keys")
