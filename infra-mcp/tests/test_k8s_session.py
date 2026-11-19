@@ -457,3 +457,46 @@ def test_cli_cleanup_returns_failure_for_partial_errors(cli, monkeypatch, capsys
     monkeypatch.setattr(cli, 'cleanup_expired', lambda *args: {'errors': [{'session': 'test', 'error': 'timeout'}]})
     assert cli.main(['cleanup-expired', '--admin-config', '/unused']) == 1
     assert json.loads(capsys.readouterr().out)['errors']
+
+
+def test_patch_targets_scope_role_and_profiles_by_kind(cli, tmp_path):
+    cluster = Cluster(cli)
+    cluster.expiry = TIME + dt.timedelta(hours=1)
+    _, path = issue(cli, tmp_path, cluster, patch_targets=[
+        'deployments/higress-console', 'deployments/higress-gateway', 'configmaps/higress-access-filebeat'])
+    role = next(obj for obj in cluster.objects.values() if obj['kind'] == 'Role')
+    scopes = {'deployments': ['higress-console', 'higress-gateway'], 'configmaps': ['higress-access-filebeat']}
+    assert role['rules'] == [
+        {'apiGroups': [cli.RESOURCE_GROUPS[kind]], 'resources': [kind], 'resourceNames': names, 'verbs': ['get', 'patch']}
+        for kind, names in scopes.items()]
+    assert '--duration=1h' in next(args for args, _ in cluster.calls if 'token' in args)
+    profiles = json.loads((path / 'client/profiles.json').read_text())['profiles']['kubernetes']
+    assert set(profiles) == {'release-deployments', 'release-configmaps'}
+    for kind, names in scopes.items():
+        profile = profiles['release-' + kind]
+        assert profile['scope'] == {'namespaces': ['existing'], 'resources': [kind], 'names': names}
+        assert profile['permissions'] == {'read': True, 'update': True, 'create': False, 'delete': False}
+        assert profile['kubeconfig'] == 'subadminconfig'
+    assert receipt(path)['patch_targets'] == scopes
+    assert cli.revoke(cluster, path)['objects_absent']
+
+
+@pytest.mark.parametrize('options', [
+    {'patch_targets': []}, {'patch_targets': ['deployments/*']}, {'patch_targets': ['secrets/key']},
+    {'patch_targets': ['deployments/file', 'deployments/file']}, {'patch_targets': ['deployments/file/scale']},
+    {'patch_targets': ['deployments/file'], 'permissions': ['read', 'update']},
+    {'patch_targets': ['deployments/file'], 'resources': ['deployments']},
+])
+def test_invalid_named_grant_never_contacts_cluster(cli, tmp_path, options):
+    cluster = Cluster(cli)
+    with pytest.raises(cli.SessionError):
+        issue(cli, tmp_path, cluster, **options)
+    assert not cluster.calls
+
+
+def test_patch_target_overlong_token_is_not_delivered(cli, tmp_path):
+    cluster = Cluster(cli)
+    with pytest.raises(cli.SessionError):
+        issue(cli, tmp_path, cluster, patch_targets=['deployments/file'])
+    assert not cluster.objects
+    assert not list(tmp_path.rglob('subadminconfig'))

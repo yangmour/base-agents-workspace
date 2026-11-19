@@ -347,12 +347,38 @@ def verify_namespace(backend, data):
         raise SessionError('Namespace changed during issuance; credentials were not delivered')
 
 
-def issue(backend, state_root, namespace, resources=None, permissions=None):
-    resources = selected(['configmaps'] if resources is None else resources, RESOURCE_GROUPS, 'resources')
-    permissions = selected(list(PERMISSIONS) if permissions is None else permissions, PERMISSIONS, 'permissions')
+def group_patch_targets(targets):
+    grouped = {}
+    for target in targets:
+        kind, _, name = target.partition('/')
+        if kind not in ('deployments', 'configmaps') or not NAME_RE.fullmatch(name):
+            raise SessionError('Expected an exact deployments/NAME or configmaps/NAME patch target')
+        names = grouped.setdefault(kind, [])
+        if name in names:
+            raise SessionError('Duplicate patch target')
+        names.append(name)
+    if not grouped:
+        raise SessionError('Named patch grants require at least one target')
+    return grouped
+
+
+def issue(backend, state_root, namespace, resources=None, permissions=None, *, patch_targets=None):
     if not NAME_RE.fullmatch(namespace):
         raise SessionError('Invalid namespace name')
-    rules = rules_for(resources, permissions)
+    targets = {}
+    if patch_targets is not None:
+        if resources is not None or permissions is not None:
+            raise SessionError('--patch-target cannot be combined with --resources or --permissions')
+        targets = group_patch_targets(patch_targets)
+        resources, permissions = list(targets), ['read', 'update']
+        rules = [{'apiGroups': [RESOURCE_GROUPS[kind]], 'resources': [kind],
+                  'resourceNames': names, 'verbs': ['get', 'patch']} for kind, names in targets.items()]
+        hours = 1
+    else:
+        resources = selected(['configmaps'] if resources is None else resources, RESOURCE_GROUPS, 'resources')
+        permissions = selected(list(PERMISSIONS) if permissions is None else permissions, PERMISSIONS, 'permissions')
+        rules = rules_for(resources, permissions)
+        hours = 24
     cluster, context, fingerprint = connection(backend)
     ns = existing(backend, '/api/v1/namespaces/' + namespace)
     if not ns or not ns.get('metadata', {}).get('uid'):
@@ -364,8 +390,10 @@ def issue(backend, state_root, namespace, resources=None, permissions=None):
     path.mkdir(mode=0o700, exist_ok=False)
     data = {'version': 1, 'session': name, 'namespace': namespace, 'namespace_uid': ns['metadata']['uid'],
             'nonce': nonce, 'context': context, 'cluster_fingerprint': fingerprint,
-            'created_at': now().isoformat(), 'requested_duration': '24h', 'expiration_timestamp': None,
+            'created_at': now().isoformat(), 'requested_duration': f'{hours}h', 'expiration_timestamp': None,
             'state': 'issuing', 'resources': resources, 'permissions': permissions, 'objects': {}}
+    if targets:
+        data['patch_targets'] = targets
     with session_lock(path):
         save(path, data)
         success = False
@@ -400,11 +428,11 @@ def issue(backend, state_root, namespace, resources=None, permissions=None):
             verify_namespace(backend, data)
             response = backend.call(['-n', namespace, 'create', 'token', name,
                 '--bound-object-kind=Secret', '--bound-object-name=' + name,
-                '--bound-object-uid=' + data['objects']['Secret']['uid'], '--duration=24h', '-o', 'json'])
+                '--bound-object-uid=' + data['objects']['Secret']['uid'], f'--duration={hours}h', '-o', 'json'])
             token_status = response.get('status', {})
             expires = timestamp(token_status.get('expirationTimestamp'))
-            if not now() < expires <= now() + dt.timedelta(days=1):
-                raise SessionError('Actual token expiry exceeds 24 hours or is already expired')
+            if not now() < expires <= now() + dt.timedelta(hours=hours):
+                raise SessionError('Actual token expiry exceeds the requested duration or is already expired')
             token = token_status.get('token')
             if not isinstance(token, str) or not token:
                 raise SessionError('TokenRequest returned no token')
@@ -420,8 +448,13 @@ def issue(backend, state_root, namespace, resources=None, permissions=None):
             profile = {'kubeconfig': 'subadminconfig', 'context': name, 'timeout': 20,
                        'permissions': {key: key in permissions for key in PERMISSIONS},
                        'scope': {'namespaces': [namespace], 'resources': resources}}
+            profiles = {'session': profile}
+            if targets:
+                profiles = {'release-' + kind: {**profile, 'scope': {
+                    'namespaces': [namespace], 'resources': [kind], 'names': names}}
+                    for kind, names in targets.items()}
             private_json(client / 'subadminconfig', child)
-            private_json(client / 'profiles.json', {'profiles': {'kubernetes': {'session': profile}}})
+            private_json(client / 'profiles.json', {'profiles': {'kubernetes': profiles}})
             data['state'] = 'active'
             save(path, data)
             success = True
@@ -496,8 +529,10 @@ def main(argv=None):
             sub.add_argument('--state-root', default=ROOT / 'sessions', type=Path)
         if command == 'issue':
             sub.add_argument('--namespace', required=True)
-            sub.add_argument('--resources', default='configmaps')
-            sub.add_argument('--permissions', default=','.join(PERMISSIONS))
+            sub.add_argument('--resources')
+            sub.add_argument('--permissions')
+            sub.add_argument('--patch-target', action='append', metavar='KIND/NAME',
+                             help='One-hour get/patch access to a named Deployment or ConfigMap; repeat for each target')
     args = parser.parse_args(argv)
     try:
         if args.command == 'status':
@@ -505,7 +540,10 @@ def main(argv=None):
         else:
             backend = Kubectl(args.admin_config, args.context)
             if args.command == 'issue':
-                result = issue(backend, args.state_root, args.namespace, args.resources.split(','), args.permissions.split(','))
+                resources = args.resources.split(',') if args.resources is not None else None
+                permissions = args.permissions.split(',') if args.permissions is not None else None
+                result = issue(backend, args.state_root, args.namespace, resources, permissions,
+                               patch_targets=args.patch_target)
             elif args.command == 'revoke':
                 result = revoke(backend, args.session_dir)
             else:

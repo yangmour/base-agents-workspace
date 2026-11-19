@@ -338,6 +338,12 @@ SESSION_DIR="$STATE_ROOT/ai-替换为实际会话标识"
 将客户端中 infra-kubernetes 的 `--config` 参数改为上述会话配置路径。
 `status` 只检查本地回执，实际连通性用 MCP 的 `check_connection` 检查。
 
+### 按对象签发临时发布权限
+
+管理员可对已有 Deployment 或 ConfigMap 重复指定 `--patch-target 种类/对象名`。每次签发限一个命名空间，请求时长为一小时，实际期限以回执为准。API Server 的 Role 按资源种类分别设置 `resourceNames`，只授予 `get` 和 `patch`。生成的 MCP 配置为每种资源建立一个连接，如 `release-deployments`；其中的 `update` 权限用于 MCP 的 patch 或 rollout restart 操作。查询时使用带名字的 `get`。该模式与 `--resources`、`--permissions` 互斥。撤销和过期清理沿用下方命令。
+
+RBAC 约束对象名，字段级发布约束由受信任流水线或集群准入策略实施。Deployment patch 可改变整个 Pod 模板。签发前由管理员确认目标工作负载的准入保护。具体的 [file 和 Higress 发布授权及客户端交付](../fn-local/kubernetes-mcp/release.md) 按两个命名空间分开执行。
+
 ### 撤销与清理
 
 用完停止该会话调用，再撤销：
