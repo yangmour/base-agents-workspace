@@ -1,0 +1,22 @@
+name: fn-local-es
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.0
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      ELASTIC_PASSWORD_FILE: /run/secrets/elastic-password
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    secrets:
+      - elastic-password
+    ports:
+      - "127.0.0.1:9200:9200"
+    volumes:
+      - data:/usr/share/elasticsearch/data
+    mem_limit: 1200m
+secrets:
+  elastic-password:
+    file: ../infra-mcp/.secrets/local-elasticsearch.password
+volumes:
+  data:

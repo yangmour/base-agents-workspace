@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infra-mcp-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: develop-reader, namespace: infra-mcp-system}
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: infra-mcp-develop-reader, namespace: develop}
+rules:
+  - apiGroups: [""]
+    resources: [pods, services, events]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [pods/log]
+    verbs: [get]
+  - apiGroups: [events.k8s.io]
+    resources: [events]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [deployments/scale]
+    verbs: [get]
+  - apiGroups: [apps]
+    resources: [deployments, daemonsets]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: infra-mcp-develop-reader, namespace: develop}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: infra-mcp-develop-reader}
+subjects:
+  - {kind: ServiceAccount, name: develop-reader, namespace: infra-mcp-system}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: kubernetes-mcp, namespace: infra-mcp-system}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: kubernetes-mcp}}
+  template:
+    metadata: {labels: {app: kubernetes-mcp}}
+    spec:
+      nodeSelector: {kubernetes.io/arch: amd64}
+      serviceAccountName: develop-reader
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      initContainers:
+        - name: install
+          image: &image python:3.12-slim-bookworm@sha256:0f086103b026048cc50cb5da25ec435c023c5241a83fc44daea593377abc61c4
+          securityContext: &security {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          workingDir: &app /app
+          env:
+            - {name: MCP_RUNTIME_DIR, value: &runtime /runtime}
+          command: [sh, -ec]
+          args:
+            - |
+              python -m pip --isolated install --disable-pip-version-check --no-cache-dir --no-compile --target "$MCP_RUNTIME_DIR/lib" --only-binary=:all: --require-hashes -r requirements.txt
+              python - <<'PYCODE'
+              import hashlib
+              import os
+              from pathlib import Path
+              from urllib.request import urlopen
+
+              url = "https://dl.k8s.io/release/v1.28.2/bin/linux/amd64/kubectl"
+              with urlopen(url, timeout=60) as response:
+                  binary = response.read()
+              if hashlib.sha256(binary).hexdigest() != "c922440b043e5de1afa3c1382f8c663a25f055978cbc6e8423493ec157579ec5":
+                  raise SystemExit("kubectl checksum mismatch")
+              path = Path(os.environ["MCP_RUNTIME_DIR"]) / "kubectl"
+              path.write_bytes(binary)
+              path.chmod(0o555)
+              PYCODE
+          resources: {requests: {cpu: 50m, memory: 128Mi}, limits: {cpu: "1", memory: 384Mi}}
+          volumeMounts:
+            - {name: app, mountPath: *app, readOnly: true}
+            - {name: runtime, mountPath: *runtime}
+            - {name: scratch, mountPath: &scratch /tmp}
+      containers:
+        - name: mcp
+          image: *image
+          securityContext: *security
+          workingDir: *app
+          command: [sh, -ec, 'export PATH="$MCP_RUNTIME_DIR:$PATH"; exec python server.py']
+          env:
+            - {name: MCP_APP_DIR, value: *app}
+            - {name: MCP_RUNTIME_DIR, value: *runtime}
+            - {name: MCP_TLS_DIR, value: &tls /tls}
+            - {name: PYTHONPATH, value: "$(MCP_APP_DIR)/infra-mcp.zip:$(MCP_RUNTIME_DIR)/lib"}
+            - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+            - {name: HOME, value: *scratch}
+          readinessProbe:
+            exec: {command: [python, -c, "import socket; socket.create_connection(('127.0.0.1',9443),1).close()"]}
+            periodSeconds: 15
+          resources: {requests: {cpu: 30m, memory: 96Mi}, limits: {cpu: "1", memory: 768Mi}}
+          volumeMounts:
+            - {name: app-with-identity, mountPath: *app, readOnly: true}
+            - {name: tls, mountPath: *tls, readOnly: true}
+            - {name: runtime, mountPath: *runtime, readOnly: true}
+            - {name: scratch, mountPath: *scratch}
+      volumes:
+        - name: app
+          configMap: {name: kubernetes-mcp-app}
+        - name: tls
+          secret: {secretName: kubernetes-mcp-transport, defaultMode: 0440}
+        - name: app-with-identity
+          projected:
+            defaultMode: 0440
+            sources:
+              - configMap: {name: kubernetes-mcp-app}
+              - serviceAccountToken: {path: token, expirationSeconds: 600}
+              - configMap:
+                  name: kube-root-ca.crt
+                  items: [{key: ca.crt, path: ca.crt}]
+        - {name: runtime, emptyDir: {sizeLimit: 512Mi}}
+        - {name: scratch, emptyDir: {sizeLimit: 256Mi}}

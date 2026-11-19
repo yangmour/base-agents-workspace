@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "kubernetes": {
+      "fn-k8s-kubernetes": {
+        "environment": "fn-k8s",
+        "kubeconfig": "kubeconfig",
+        "context": "develop-reader",
+        "timeout": 20,
+        "permissions": {"read": true, "create": false, "update": false, "delete": false},
+        "scope": {"namespaces": ["develop"], "resources": ["pods", "services", "deployments", "daemonsets", "events"]}
+      }
+    }
+  }
+}
