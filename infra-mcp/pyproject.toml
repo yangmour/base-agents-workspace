@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "infra-mcp"
 version = "0.1.0"
-description = "Redis, RabbitMQ, Elasticsearch, Kubernetes, Nacos, MySQL and RocketMQ MCP servers with per-profile CRUD permissions"
+description = "Redis, RabbitMQ, Elasticsearch, Kubernetes, Nacos, MySQL, RocketMQ and Jenkins MCP servers with per-profile CRUD permissions"
 requires-python = ">=3.12"
 dependencies = ["mcp>=1.26,<2", "redis==7.4.1", "httpx>=0.27,<1", "PyMySQL[rsa]==1.2.3"]
 

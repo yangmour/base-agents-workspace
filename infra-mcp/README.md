@@ -1,6 +1,6 @@
 # Infra MCP 使用说明
 
-Redis、RabbitMQ、Elasticsearch、Kubernetes、Nacos 3.x、MySQL、RocketMQ 七个独立 stdio MCP。
+Redis、RabbitMQ、Elasticsearch、Kubernetes、Nacos 3.x、MySQL、RocketMQ、Jenkins 八个独立 stdio MCP。
 每个服务支持多个命名连接，每个连接独立控制增删改查权限。客户端调用时必须指定 `connection`。
 
 - [安装与配置](#安装与配置)
@@ -10,6 +10,7 @@ Redis、RabbitMQ、Elasticsearch、Kubernetes、Nacos 3.x、MySQL、RocketMQ 七
 - [MySQL 使用](#mysql-使用)
 - [Nacos 使用](#nacos-使用)
 - [RocketMQ 使用](#rocketmq-使用)
+- [Jenkins 发布与回滚](jenkins.md)
 - [K8s 一天临时凭据](#k8s-一天临时凭据)
 - [输出限制与常见问题](#输出限制与常见问题)
 
@@ -34,7 +35,7 @@ fi
 例如，`.secrets/mysql-password` 指向配置文件旁的 `.secrets` 目录。跨客户端共用时可使用这些私有文件引用。[配置示例](profiles.example.json)
 
 客户端可调用 `infra-mcp mysql`。指定其他配置时传 `--config "$profile_file"`，或设置环境变量 `INFRA_MCP_CONFIG`。
-将服务名替换为 `redis`、`rabbitmq`、`elasticsearch`、`kubernetes`、`nacos` 或 `rocketmq` 即可启动相应服务。
+将服务名替换为 `redis`、`rabbitmq`、`elasticsearch`、`kubernetes`、`nacos`、`rocketmq` 或 `jenkins` 即可启动相应服务。
 手工启动后等待输入是 stdio 的正常状态。没有配置文件时，`list_connections` 返回 `configuration_needed: true`。
 
 从源码运行时，在项目目录创建虚拟环境，再用项目启动脚本。
@@ -58,7 +59,7 @@ uv sync --frozen
 
 ```bash
 codex mcp list
-for service in redis rabbitmq elasticsearch kubernetes nacos mysql rocketmq
+for service in redis rabbitmq elasticsearch kubernetes nacos mysql rocketmq jenkins
 do
   codex mcp add "infra-$service" -- infra-mcp "$service"
 done
@@ -72,7 +73,7 @@ done
 
 ```bash
 claude mcp list
-for service in redis rabbitmq elasticsearch kubernetes nacos mysql rocketmq
+for service in redis rabbitmq elasticsearch kubernetes nacos mysql rocketmq jenkins
 do
   claude mcp add --transport stdio --scope user "infra-$service" -- infra-mcp "$service"
 done

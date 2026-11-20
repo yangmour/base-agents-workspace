@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 ACTIONS = frozenset({"create", "read", "update", "delete"})
-SERVICES = frozenset({"redis", "rabbitmq", "elasticsearch", "kubernetes", "nacos", "mysql", "rocketmq"})
+SERVICES = frozenset({"redis", "rabbitmq", "elasticsearch", "kubernetes", "nacos", "mysql", "rocketmq", "jenkins"})
 FILE_OPTIONS = frozenset({"username_file", "password_file", "api_key_file", "token_file", "ca_file", "kubeconfig"})
 
 
@@ -108,6 +108,11 @@ class ConfigStore:
             permitted = frozenset(k for k, v in permissions.items() if v)
         else:
             permitted = ACTIONS
+        if service == "jenkins":
+            grants = raw.get("capabilities", [])
+            if not isinstance(grants, list) or not all(isinstance(g, str) and g in
+                    {"deploy", "rollback", "configure", "cancel"} for g in grants):
+                raise InfraError("invalid_config", "Unsupported Jenkins capabilities")
         scope = raw.get("scope", {})
         allowed_scope_keys = {
             "redis": {"key_patterns"}, "rabbitmq": {"vhosts", "queues", "exchanges"},
@@ -115,6 +120,7 @@ class ConfigStore:
             "nacos": {"namespaces", "groups", "data_ids", "services"},
             "mysql": {"databases", "tables"},
             "rocketmq": {"topics", "groups"},
+            "jenkins": {"jobs"},
         }[service]
         if not isinstance(scope, dict) or set(scope) - allowed_scope_keys:
             raise InfraError("invalid_config", "Invalid resource scope keys")

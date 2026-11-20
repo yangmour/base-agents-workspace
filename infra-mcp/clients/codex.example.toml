@@ -28,3 +28,7 @@ args = ["mysql"]
 [mcp_servers.infra-rocketmq]
 command = "infra-mcp"
 args = ["rocketmq"]
+
+[mcp_servers.infra-jenkins]
+command = "infra-mcp"
+args = ["jenkins"]

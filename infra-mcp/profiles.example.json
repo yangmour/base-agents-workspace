@@ -1,5 +1,40 @@
 {
   "profiles": {
+    "jenkins": {
+      "test-release": {
+        "environment": "test",
+        "url": "https://jenkins.example.invalid/ci",
+        "username": "release-bot",
+        "token_file": ".secrets/jenkins-api-token",
+        "permissions": {"read": true, "create": true, "update": true},
+        "capabilities": ["deploy", "rollback", "cancel"],
+        "scope": {"jobs": ["test/auth-center/develop", "test/rollback-auth-center"]},
+        "targets": {
+          "test/auth-center/develop": {
+            "environment": "test", "service": "auth-center",
+            "branch": "develop", "script_branch": "develop",
+            "branch_parameter": "PROJECT_BRANCH", "commit_parameter": "PROJECT_COMMIT",
+            "cluster": "replace-with-kube-system-namespace-uid",
+            "namespace": "develop", "deployment": "auth-center",
+            "rollback_job": "test/rollback-auth-center"
+          }
+        }
+      },
+      "prod-readonly": {
+        "environment": "production",
+        "url": "https://jenkins.example.invalid/ci",
+        "username": "reader", "token_file": ".secrets/jenkins-read-token",
+        "permissions": {"read": true},
+        "scope": {"jobs": ["production/*"]},
+        "targets": {
+          "production/auth-center/main": {
+            "environment": "production", "service": "auth-center", "branch": "main",
+            "cluster": "replace-with-production-cluster-uid",
+            "namespace": "production", "deployment": "auth-center"
+          }
+        }
+      }
+    },
     "redis": {
       "local-full": {
         "environment": "local",

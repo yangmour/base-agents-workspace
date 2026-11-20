@@ -56,3 +56,11 @@
       command: infra-mcp
       args:
       - rocketmq
+  - id: infra-jenkins
+    name: '@deepseek-ai/dsh-mcp-client'
+    config:
+      serverName: infra-jenkins
+      transport: stdio
+      command: infra-mcp
+      args:
+      - jenkins

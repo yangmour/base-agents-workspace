@@ -81,10 +81,13 @@ class BaseService:
 
     def list_connections(self) -> dict:
         profiles = self.config.profiles(self.service)
-        return {"connections": [{"name": name, "environment": p.options.get("environment", ""),
-                                  "permissions": {action: action in p.permissions for action in sorted(ACTIONS)},
-                                  "scope": p.scope} for name, p in profiles.items()],
+        return {"connections": [self.connection_metadata(p) for p in profiles.values()],
                 "configuration_needed": not bool(profiles)}
+
+    def connection_metadata(self, profile: Profile) -> dict:
+        return {"name": profile.name, "environment": profile.options.get("environment", ""),
+                "permissions": {action: action in profile.permissions for action in sorted(ACTIONS)},
+                "scope": profile.scope}
 
     def list_operations(self) -> dict:
         return {"operations": {name: {"action": op.action, "description": op.description,

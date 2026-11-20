@@ -9,7 +9,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 
-@pytest.mark.parametrize("service", ["redis", "rabbitmq", "elasticsearch", "kubernetes", "nacos", "mysql", "rocketmq"])
+@pytest.mark.parametrize("service", ["redis", "rabbitmq", "elasticsearch", "kubernetes", "nacos", "mysql", "rocketmq", "jenkins"])
 def test_actual_stdio_discovery_and_unconfigured_calls(tmp_path, service):
     async def check():
         params = StdioServerParameters(

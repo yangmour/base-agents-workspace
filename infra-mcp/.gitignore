@@ -8,3 +8,4 @@ profiles.json
 *.private.json
 reports/
 sessions/
+.jenkins-state/

@@ -92,7 +92,16 @@ class KubernetesService(BaseService):
             result['redacted'] = True
         return result
 
+    def observe_deployment(self, profile, namespace, deployment, project):
+        """Project version metadata before the generic resource response strips annotations."""
+        profile.require('read')
+        return self._execute(profile, 'get', {'namespace': namespace, 'resource': 'deployments',
+                                              'name': deployment}, project)
+
     def execute(self, profile, operation, arguments):
+        return self._execute(profile, operation, arguments)
+
+    def _execute(self, profile, operation, arguments, project=None):
         if operation not in self.operations: fail('Unsupported Kubernetes operation')
         config, context = profile.options.get('kubeconfig'), profile.options.get('context')
         if not isinstance(config, str) or not os.path.isabs(config) or '\x00' in config: fail('An absolute configured kubeconfig is required')
@@ -153,6 +162,8 @@ class KubernetesService(BaseService):
             return {'deletion_requested': True, 'namespace': ns, 'resource': resource, 'name': target}
         try: result = json.loads(output)
         except (ValueError,TypeError): raise InfraError('backend_error','Invalid Kubernetes response') from None
+        if project is not None:
+            return project(result)
         def clean(obj):
             if isinstance(obj,dict):
                 if obj.get('kind') == 'Secret' or resource == 'secrets':
