@@ -1,6 +1,6 @@
 # Jenkins 发布与回滚
 
-在 Linux 或 macOS 运行 `infra-mcp jenkins` 或 `./scripts/launch.sh jenkins`。在 profiles.json 的 `profiles.jenkins` 中配置实例地址、Jenkins 用户和 API Token 文件或环境变量，可直接复制 [profile 示例](profiles.example.json)。控制器装在子路径时将子路径写入 URL。使用同一配置文件的本地客户端共享请求记录和配置快照。
+在 Linux 或 macOS 运行 `infra-mcp jenkins` 或 `./scripts/launch.sh jenkins`。在 profiles.json 的 `profiles.jenkins` 中用 `url` 配置实例地址、`username` 填写 Jenkins 用户名、`token_file` 引用私有 API Token 文件。相对路径以 profiles.json 所在目录为基准。[配置示例](profiles.example.json) 控制器装在子路径时将子路径写入 URL。使用同一配置文件的本地客户端共享请求记录和配置快照。
 
 ## 配置流水线
 
