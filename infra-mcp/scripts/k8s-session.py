@@ -33,6 +33,7 @@ PERMISSIONS = {'create': ['create'], 'read': ['get', 'list', 'watch'],
                'update': ['update', 'patch'], 'delete': ['delete']}
 SESSION_RE = re.compile(r'ai-[0-9a-f]{24}\Z')
 NAME_RE = re.compile(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\Z')
+PATCH_KINDS = ('pods', 'configmaps', 'deployments', 'statefulsets', 'daemonsets')
 
 
 class SessionError(Exception):
@@ -351,8 +352,9 @@ def group_patch_targets(targets):
     grouped = {}
     for target in targets:
         kind, _, name = target.partition('/')
-        if kind not in ('deployments', 'configmaps') or not NAME_RE.fullmatch(name):
-            raise SessionError('Expected an exact deployments/NAME or configmaps/NAME patch target')
+        if (kind not in PATCH_KINDS or len(name) > 253
+                or not all(NAME_RE.fullmatch(label) for label in name.split('.'))):
+            raise SessionError(f'Expected KIND/NAME with an exact name and kind in {", ".join(PATCH_KINDS)}')
         names = grouped.setdefault(kind, [])
         if name in names:
             raise SessionError('Duplicate patch target')
@@ -532,7 +534,7 @@ def main(argv=None):
             sub.add_argument('--resources')
             sub.add_argument('--permissions')
             sub.add_argument('--patch-target', action='append', metavar='KIND/NAME',
-                             help='One-hour get/patch access to a named Deployment or ConfigMap; repeat for each target')
+                             help=f'One-hour get/patch access; kinds: {", ".join(PATCH_KINDS)}; repeat per target')
     args = parser.parse_args(argv)
     try:
         if args.command == 'status':
