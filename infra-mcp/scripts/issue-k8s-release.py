@@ -32,7 +32,10 @@ def main():
         command.extend(["--context", args.context])
     for target in args.targets:
         command.extend(["--patch-target", target])
-    result = subprocess.run(command, stdout=subprocess.PIPE, text=True, check=True)
+    result = subprocess.run(command, stdout=subprocess.PIPE, text=True)
+    if result.returncode:
+        # The issuer has already printed a sanitized error and any cleanup receipt.
+        sys.exit(result.returncode)
     receipt = json.loads(result.stdout)
     source = Path(receipt["session_dir"]) / "client"
     print(f"管理员回执目录：{source.parent}", file=sys.stderr)

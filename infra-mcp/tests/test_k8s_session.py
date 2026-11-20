@@ -481,11 +481,28 @@ def test_patch_targets_scope_role_and_profiles_by_kind(cli, tmp_path):
     assert cli.revoke(cluster, path)['objects_absent']
 
 
+def test_named_pod_and_rollout_targets(cli, tmp_path):
+    cluster = Cluster(cli)
+    cluster.expiry = TIME + dt.timedelta(hours=1)
+    scopes = {'pods': ['worker.v2-0'], 'statefulsets': ['worker.v2'], 'daemonsets': ['collector']}
+    _, path = issue(cli, tmp_path, cluster, patch_targets=[
+        f'{kind}/{name}' for kind, names in scopes.items() for name in names])
+    role = next(obj for obj in cluster.objects.values() if obj['kind'] == 'Role')
+    assert role['rules'] == [
+        {'apiGroups': [cli.RESOURCE_GROUPS[kind]], 'resources': [kind], 'resourceNames': names,
+         'verbs': ['get', 'patch']} for kind, names in scopes.items()]
+    profiles = json.loads((path / 'client/profiles.json').read_text())['profiles']['kubernetes']
+    assert {key: profile['scope'] for key, profile in profiles.items()} == {
+        f'release-{kind}': {'namespaces': ['existing'], 'resources': [kind], 'names': names}
+        for kind, names in scopes.items()}
+
+
 @pytest.mark.parametrize('options', [
     {'patch_targets': []}, {'patch_targets': ['deployments/*']}, {'patch_targets': ['secrets/key']},
     {'patch_targets': ['deployments/file', 'deployments/file']}, {'patch_targets': ['deployments/file/scale']},
     {'patch_targets': ['deployments/file'], 'permissions': ['read', 'update']},
     {'patch_targets': ['deployments/file'], 'resources': ['deployments']},
+    {'patch_targets': ['pods/worker/log']}, {'patch_targets': ['pods/worker..other']},
 ])
 def test_invalid_named_grant_never_contacts_cluster(cli, tmp_path, options):
     cluster = Cluster(cli)

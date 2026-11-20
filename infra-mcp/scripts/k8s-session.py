@@ -153,7 +153,12 @@ class Kubectl:
                 ('(notfound)', 'not_found'), ('(alreadyexists)', 'already_exists'),
                 ('(conflict)', 'uid_conflict'), ('(forbidden)', 'forbidden'),
                 ('(unauthorized)', 'unauthorized'), ('x509', 'tls_error'),
-                ('timeout', 'timeout')] if marker in result.stderr.lower()), 'request_error')
+                ('deadline exceeded', 'timeout'), ('timeout', 'timeout'), ('timed out', 'timeout'),
+                ('connection refused', 'connection_refused'), ('connection reset', 'connection_reset'),
+                ('unexpected eof', 'connection_closed'), (': eof', 'connection_closed'),
+                ('no route to host', 'network_unreachable'), ('no such host', 'dns_error'),
+                ('serviceunavailable', 'service_unavailable')
+            ] if marker in result.stderr.lower()), 'request_error')
             raise BackendError(reason)
         try:
             return json.loads(result.stdout)
@@ -382,7 +387,17 @@ def issue(backend, state_root, namespace, resources=None, permissions=None, *, p
         rules = rules_for(resources, permissions)
         hours = 24
     cluster, context, fingerprint = connection(backend)
-    ns = existing(backend, '/api/v1/namespaces/' + namespace)
+    # A failed read here has no session or cluster objects to clean up.
+    for attempt in range(3):
+        try:
+            ns = existing(backend, '/api/v1/namespaces/' + namespace)
+            break
+        except BackendError as error:
+            transient = error.reason in ('timeout', 'connection_refused', 'connection_reset',
+                                         'connection_closed', 'service_unavailable')
+            if not transient or attempt == 2:
+                raise SessionError(f'Namespace preflight ({namespace}) failed: {error.reason}') from None
+            time.sleep(2 ** attempt)
     if not ns or not ns.get('metadata', {}).get('uid'):
         raise SessionError('An existing namespace is required')
     root = safe_path(state_root, directory=True, private=True)
