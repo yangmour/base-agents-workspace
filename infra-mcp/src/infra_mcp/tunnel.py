@@ -44,6 +44,7 @@ def approved_form(message):
 
 ISSUER = bin_dir() / "infra-kubernetes-release-issuer"
 ISSUER_CONNECTION = "release-issuer"
+ISSUER_RELEASES = ["develop", "higress-system", "logging"]
 ISSUER_OPERATIONS = {
     "list_release_credentials": ("read", "list", None, "List managed release sessions and expiry; metadata only."),
     "issue_release_credential": ("create", "issue", "release", "Issue a one-hour named release after a Mac confirmation."),
@@ -114,12 +115,12 @@ def build_frontend(transport):
                 if issuer_enabled:
                     listing["connections"].append({"name": ISSUER_CONNECTION, "environment": "local operator",
                         "permissions": {action: action == "read" for action in ACTIONS},
-                        "allow_after_approval": ["create", "delete"], "scope": {"releases": ["develop", "higress-system"]}})
+                        "allow_after_approval": ["create", "delete"], "scope": {"releases": ISSUER_RELEASES}})
                 return listing
             if name == "list_operations" and issuer_enabled and not result.isError:
                 listing = result.structuredContent
                 for op, (action, _, field, description) in ISSUER_OPERATIONS.items():
-                    params = {} if not field else {field: "develop or higress-system" if field == "release" else "Exact release session ID"}
+                    params = {} if not field else {field: ", ".join(ISSUER_RELEASES) if field == "release" else "Exact release session ID"}
                     listing["operations"][op] = {"action": action, "description": description, "parameters": params,
                                                  "additional_permissions": [], "connection": ISSUER_CONNECTION}
                 return listing
