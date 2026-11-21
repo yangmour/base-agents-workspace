@@ -1,4 +1,4 @@
-"""Trusted Mac issuer for two named releases. The MCP receives metadata only."""
+"""Trusted Mac issuer for named releases. The MCP receives metadata only."""
 import asyncio
 from contextlib import contextmanager
 import ctypes
@@ -20,6 +20,7 @@ spec.loader.exec_module(sessions)
 ROOT = sessions_dir()
 RELEASES = releases_dir()
 SETTINGS = config_dir() / "release-issuer.json"
+LOGGING = json.loads(Path(__file__).with_name("logging-release.json").read_text())
 TARGETS = {"develop": {"deployments": ["file"]},
            "higress-system": {"deployments": ["higress-console", "higress-gateway"],
                               "configmaps": ["higress-access-filebeat"]}}
@@ -49,13 +50,15 @@ def receipt(sid):
     if not sessions.SESSION_RE.fullmatch(sid):
         raise ValueError("Invalid release session")
     row = sessions.load_receipt(ROOT / sid)
+    if row.get("release") == "logging" and row["namespace"] in LOGGING and row.get("cleanup_on_expiry") is True and row.get("logging_rules"):
+        return row
     if row.get("patch_targets") != TARGETS.get(row["namespace"]) or row["namespace"] not in TARGETS:
         raise ValueError("Not a registered release policy")
     return row
 
 
 def metadata(row):
-    info = {k: row.get(k) for k in ("session", "namespace", "state", "expiration_timestamp", "patch_targets")}
+    info = {k: row.get(k) for k in ("session", "namespace", "state", "expiration_timestamp", "patch_targets", "release")}
     return {**info, "expired": expired(row), "cleanup_on_expiry": row.get("cleanup_on_expiry") is True}
 
 
@@ -146,6 +149,21 @@ def ask(action, operation, details):
 
 
 def issue(ns):
+    if ns == "logging":
+        ask("create", "issue_release_credential", {"发布": "logging", "逐对象权限": LOGGING,
+            "有效期": "1 小时", "到期处理": "自动撤销三个独立的命名空间凭据"})
+        issued = []
+        with manager_lock():
+            issuer = backend()
+            try:
+                for namespace, rules in LOGGING.items():
+                    issued.append(sessions.issue(issuer, ROOT, namespace, logging_rules=rules, release_lifecycle=True))
+                return {"release": "logging", "credentials": [
+                    {**metadata(receipt(r["session"])), "kubeconfig": r["child_config"]} for r in issued]}
+            except BaseException:
+                for report in reversed(issued):
+                    sessions.revoke(issuer, ROOT / report["session"])
+                raise
     if ns not in TARGETS:
         raise ValueError("Unsupported release")
     previous = installed(ns)

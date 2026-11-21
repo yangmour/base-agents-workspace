@@ -1,0 +1,27 @@
+{
+  "develop": [
+    {"resources":["persistentvolumeclaims"],"resourceNames":["logging-filebeat-binaries"],"verbs":["get","patch","create"]},
+    {"resources":["pods"],"resourceNames":["logging-filebeat-stage"],"verbs":["get","list","watch","patch","create","delete"]},
+    {"resources":["pods/exec"],"resourceNames":["logging-filebeat-stage"],"verbs":["get","create"]},
+    {"resources":["configmaps"],"resourceNames":["logstash-conf","logstash-yml","filebeat-config","mysql-monitoring-config","mysql-slow-framer","kibana-log-views"],"verbs":["get","patch","create"]},
+    {"resources":["services"],"resourceNames":["service-logstash","filebeat-exporter"],"verbs":["get","patch"]},
+    {"resources":["ingresses"],"resourceNames":["ingress-logstash"],"verbs":["get","patch"]},
+    {"resources":["jobs"],"resourceNames":["elasticsearch-log-retention","kibana-log-views","logging-filebeat-image-check"],"verbs":["get","list","watch","create","patch","delete"]},
+    {"resources":["cronjobs"],"resourceNames":["application-log-retention"],"verbs":["get","patch","create"]},
+    {"resources":["daemonsets"],"resourceNames":["filebeat"],"verbs":["get","list","watch","patch"]},
+    {"resources":["deployments"],"resourceNames":["logstash","rocketmq-namesrv","nexus3","xxl-job-admin"],"verbs":["get","list","watch","patch"]},
+    {"resources":["statefulsets"],"resourceNames":["mysql","redis","rocketmq-broker","nacos"],"verbs":["get","list","watch","patch"]},
+    {"resources":["statefulsets"],"resourceNames":["elasticsearch"],"verbs":["get","list","watch"]},
+    {"resources":["deployments"],"resourceNames":["kibana"],"verbs":["get","list","watch"]}
+  ],
+  "observability": [
+    {"resources":["configmaps"],"resourceNames":["prometheus-rules","otel-collector-config"],"verbs":["get","patch"]},
+    {"resources":["daemonsets"],"resourceNames":["node-exporter"],"verbs":["get","list","watch","patch"]},
+    {"resources":["deployments"],"resourceNames":["prometheus","otel-collector"],"verbs":["get","list","watch","patch"]}
+  ],
+  "higress-system": [
+    {"resources":["configmaps"],"resourceNames":["higress-config"],"verbs":["get","patch"]},
+    {"resources":["configmaps"],"resourceNames":["higress-access-rotation"],"verbs":["get","patch","create"]},
+    {"resources":["deployments"],"resourceNames":["higress-gateway"],"verbs":["get","list","watch","patch"]}
+  ]
+}

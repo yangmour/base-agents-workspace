@@ -372,7 +372,7 @@ RBAC 约束对象名，字段级发布约束由受信任流水线或集群准入
 撤销仅回收本次凭据与授权对象，不删除 namespace，也不回滚 AI 创建的业务资源；已接受的操作或连接不保证立即中断。
 
 可签发资源：configmaps、services、pods、persistentvolumeclaims、deployments、statefulsets、daemonsets、jobs、cronjobs、ingresses、events；events 只读。
-不签发 Secret、RBAC、ServiceAccount/token、exec 或集群级资源权限。
+通用 CLI 禁止签发 Secret、RBAC、ServiceAccount/token、exec 和集群级资源权限。日志发布策略另行登记了开发环境具名传输 Pod 的 exec 权限，通过 Mac 签发器确认。
 开放工作负载写权限前需配置 Admission 隔离，限制特权容器、主机挂载、Secret 挂载与高权限 SA；
 仅禁止直接读取 Secret 不足以隔离工作负载。已有其他 RBAC 授权也需管理员检查。
 

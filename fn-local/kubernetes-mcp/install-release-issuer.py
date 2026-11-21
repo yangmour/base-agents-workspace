@@ -1,4 +1,4 @@
-"""Install the two-policy release issuer and its expiry-only Mac LaunchAgent."""
+"""Install the named release issuer and its expiry-only Mac LaunchAgent."""
 import argparse
 from pathlib import Path
 import json
@@ -48,7 +48,7 @@ def main():
     python = installed.with_name("python")
     subprocess.run([python, "-c", "from infra_mcp.approval import confirm_write; import infra_mcp.paths"], check=True)
     data = paths["location"]("XDG_DATA_HOME", home / ".local/share") / "infra-mcp/issuer"
-    for name in ("k8s-session.py", "k8s-release-issuer.py"):
+    for name in ("k8s-session.py", "k8s-release-issuer.py", "logging-release.json"):
         write(data / name, (scripts / name).read_bytes(), 0o600)
     launcher = paths["bin_dir"]() / "infra-kubernetes-release-issuer"
     rel_python = shlex.quote(os.path.relpath(python, launcher.parent))

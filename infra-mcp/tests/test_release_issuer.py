@@ -136,3 +136,21 @@ def test_admin_config_is_anchored_to_issuer_settings(issuer, tmp_path, monkeypat
     monkeypatch.chdir(tmp_path)
     issuer.backend()
     cli.assert_called_once_with(operator, "pinned")
+
+
+def test_logging_issues_three_isolated_named_sessions_after_approval(issuer, monkeypatch):
+    calls = []
+    def issue(backend, root, namespace, *, logging_rules, release_lifecycle):
+        assert calls[0] == "approved" and release_lifecycle
+        assert all(rule["resourceNames"] and "*" not in rule["resourceNames"] for rule in logging_rules)
+        assert all(rule["resources"][0] not in {"secrets","roles","rolebindings"} for rule in logging_rules)
+        assert all(r["resourceNames"] == ["logging-filebeat-stage"] for r in logging_rules if r["resources"] == ["pods/exec"])
+        calls.append(namespace)
+        return {"session": namespace, "child_config": str(root / namespace / "client/subadminconfig")}
+    monkeypatch.setattr(issuer, "ask", lambda *args: calls.append("approved"))
+    monkeypatch.setattr(issuer, "backend", lambda: object())
+    monkeypatch.setattr(issuer.sessions, "issue", issue)
+    monkeypatch.setattr(issuer, "receipt", lambda ns: {"session": ns, "namespace": ns, "expiration_timestamp": None})
+    result = issuer.run(["issue", "logging"])
+    assert calls == ["approved", "develop", "observability", "higress-system"]
+    assert len(result["credentials"]) == 3

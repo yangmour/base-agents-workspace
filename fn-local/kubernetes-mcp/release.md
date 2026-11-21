@@ -58,10 +58,12 @@ python3 scripts/k8s-session.py revoke --admin-config "$ADMIN_CONFIG" --context "
 | 工具 | 操作 | 参数 |
 |---|---|---|
 | `read` | `list_release_credentials` | 无 |
-| `create` | `issue_release_credential` | `release` 取 `develop` 或 `higress-system` |
+| `create` | `issue_release_credential` | `release` 取 `develop`、`higress-system` 或 `logging` |
 | `delete` | `delete_expired_release_credential` | `session` 取清单中的已过期会话标识 |
 
 签发前，Mac 会显示具名对象、有效期、当前会话和到期回收安排。点「允许本次」才会签发并切换对应发布入口。一小时凭据只允许获取和修补上表的具名对象；Higress 另有本命名空间 Pod 和事件的只读诊断。签发确认同时授权到期回收该会话的本机凭据和专属集群对象。
+
+日志发布选择 `logging`。签发窗口逐项显示 `infra-mcp/scripts/logging-release.json` 登记的资源、对象名和操作。确认后返回三个独立的短期 kubeconfig 路径，分别用于 `develop`、`observability` 和 `higress-system`。直接分发 Filebeat 时，`pods/exec` 仅对 `develop/logging-filebeat-stage` 生效。传输 Pod 只挂载制品 PVC，校验完成后删除。
 
 Mac 用户登录时，`com.xiwen.kubernetes-release-expiry` 每分钟按签发回执检查到期时间。Mac 离线时，令牌按集群签发期限失效，恢复连接后再回收集群对象。回收会校验集群、命名空间和对象 UID，保留签发回执以便审计和重试。手动删除已过期会话时也会单独显示确认。
 

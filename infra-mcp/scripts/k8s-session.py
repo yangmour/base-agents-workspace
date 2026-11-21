@@ -369,13 +369,21 @@ def group_patch_targets(targets):
     return grouped
 
 
-def issue(backend, state_root, namespace, resources=None, permissions=None, *, patch_targets=None, release_lifecycle=False):
+def issue(backend, state_root, namespace, resources=None, permissions=None, *, patch_targets=None, release_lifecycle=False, logging_rules=None):
     if not NAME_RE.fullmatch(namespace):
         raise SessionError('Invalid namespace name')
-    if release_lifecycle and not patch_targets:
+    if release_lifecycle and not (patch_targets or logging_rules):
         raise SessionError('A managed release requires named patch targets')
     targets = {}
-    if patch_targets is not None:
+    if logging_rules is not None:
+        if not release_lifecycle or patch_targets or resources or permissions:
+            raise SessionError('Logging rules require an exclusive managed session')
+        if any(not r.get('resourceNames') or len(r['resources']) != 1 for r in logging_rules):
+            raise SessionError('Logging permissions must be scoped to named objects')
+        rules = [{**r, 'apiGroups': [RESOURCE_GROUPS[r['resources'][0].split('/')[0]]]} for r in logging_rules]
+        resources = sorted({r['resources'][0] for r in rules})
+        permissions, hours = ['read'], 1
+    elif patch_targets is not None:
         if resources is not None or permissions is not None:
             raise SessionError('--patch-target cannot be combined with --resources or --permissions')
         targets = group_patch_targets(patch_targets)
@@ -417,6 +425,9 @@ def issue(backend, state_root, namespace, resources=None, permissions=None, *, p
             'state': 'issuing', 'resources': resources, 'permissions': permissions, 'objects': {}}
     if release_lifecycle:
         data['cleanup_on_expiry'] = True
+    if logging_rules is not None:
+        data['release'] = 'logging'
+        data['logging_rules'] = logging_rules
     if targets:
         data['patch_targets'] = targets
     with session_lock(path):
