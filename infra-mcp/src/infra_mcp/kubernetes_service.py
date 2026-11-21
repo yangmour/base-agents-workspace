@@ -84,8 +84,8 @@ class KubernetesService(BaseService):
         'scale': Operation('update', 'Set workload replica count', {'namespace':'Required namespace','resource':'deployments or statefulsets','name':'Required workload name','replicas':'Required integer 0..10000'}),
     }
 
-    def run(self, connection, action, operation, arguments=None):
-        result = super().run(connection, action, operation, arguments)
+    def run(self, connection, action, operation, arguments=None, *, expected_profile=None):
+        result = super().run(connection, action, operation, arguments, expected_profile=expected_profile)
         # Secret scrubbing is mandatory even when generic redaction is disabled.
         # Keep the public envelope honest without per-connection mutable state.
         if '[REDACTED]' in json.dumps(result['data']):

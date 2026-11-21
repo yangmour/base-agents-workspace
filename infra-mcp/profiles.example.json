@@ -6,7 +6,8 @@
         "url": "https://jenkins.example.invalid/ci",
         "username": "release-bot",
         "token_file": ".secrets/jenkins-api-token",
-        "permissions": {"read": true, "create": true, "update": true},
+        "permissions": {"read": true},
+        "allow_after_approval": ["create", "update"],
         "capabilities": ["deploy", "rollback", "cancel"],
         "scope": {"jobs": ["test/auth-center/develop", "test/rollback-auth-center"]},
         "targets": {
@@ -37,6 +38,8 @@
     },
     "redis": {
       "local-full": {
+        "permissions": {"read": true},
+        "allow_after_approval": ["create", "update", "delete"],
         "environment": "local",
         "host": "127.0.0.1",
         "port": 6379,
@@ -57,6 +60,8 @@
     },
     "rabbitmq": {
       "local-full": {
+        "permissions": {"read": true},
+        "allow_after_approval": ["create", "update", "delete"],
         "environment": "local",
         "url": "http://127.0.0.1:15672",
         "username": "guest",
@@ -74,6 +79,8 @@
     },
     "elasticsearch": {
       "local-full": {
+        "permissions": {"read": true},
+        "allow_after_approval": ["create", "update", "delete"],
         "environment": "local",
         "url": "http://127.0.0.1:9200",
         "scope": {"indices": ["app-*"]}
@@ -88,6 +95,8 @@
     },
     "nacos": {
       "local-full": {
+        "permissions": {"read": true},
+        "allow_after_approval": ["create", "update", "delete"],
         "environment": "local",
         "url": "http://127.0.0.1:8848/nacos",
         "api_version": 3,
@@ -103,6 +112,8 @@
     },
     "mysql": {
       "local-full": {
+        "permissions": {"read": true},
+        "allow_after_approval": ["create", "update", "delete"],
         "environment": "local",
         "host": "127.0.0.1",
         "port": 3306,
@@ -125,6 +136,8 @@
     },
     "rocketmq": {
       "local": {
+        "permissions": {"read": true},
+        "allow_after_approval": ["create", "update", "delete"],
         "environment": "local",
         "url": "http://127.0.0.1:18082",
         "cluster": "MoxingLocal",
@@ -148,6 +161,8 @@
     },
     "kubernetes": {
       "session-full": {
+        "permissions": {"read": true},
+        "allow_after_approval": ["create", "update", "delete"],
         "environment": "isolated-session",
         "kubeconfig": "sessions/session-id/client/subadminconfig",
         "context": "ai-session-id-from-receipt",

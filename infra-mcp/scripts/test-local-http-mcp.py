@@ -56,7 +56,7 @@ async def session_checks(service, config, checks, exercise):
 
     with open(os.devnull, "w") as errors:
         async with stdio_client(params, errlog=errors) as (reader, writer):
-            async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=15)) as session:
+            async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=150)) as session:
                 await session.initialize()
                 check("MCP initialize", True)
 
@@ -83,7 +83,7 @@ async def session_checks(service, config, checks, exercise):
                       {"list_connections", "list_operations", "check_connection", *ACTIONS})
                 connections = await call("list_connections")
                 check("Discovery excludes connection options and credentials", all(
-                    set(item) == {"name", "environment", "permissions", "scope"}
+                    set(item) == {"name", "environment", "permissions", "allow_after_approval", "scope"}
                     for item in connections["connections"]))
                 await call("list_operations")
                 await exercise(call, check)

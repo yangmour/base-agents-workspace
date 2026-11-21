@@ -31,9 +31,9 @@ def store(tmp_path, profiles):
     return ConfigStore(path)
 
 
-def test_absent_permissions_enables_all_crud(tmp_path):
+def test_absent_permissions_enables_only_read(tmp_path):
     p = store(tmp_path, {"local": {}}).get("redis", "local")
-    assert p.permissions == frozenset({"create", "read", "update", "delete"})
+    assert p.permissions == {"read"}
 
 
 def test_file_references_use_config_directory_after_working_directory_changes(tmp_path, monkeypatch):
@@ -60,7 +60,7 @@ def test_file_references_use_config_directory_after_working_directory_changes(tm
 def test_mysql_connections_have_independent_crud_permissions(tmp_path):
     path = tmp_path / "mysql.json"
     path.write_text(json.dumps({"profiles": {"mysql": {
-        "all": {}, "read-only": {"permissions": {"read": True}},
+        "all": {"allow_after_approval": ["create", "update", "delete"]}, "read-only": {"permissions": {"read": True}},
         "write": {"permissions": {"create": True, "update": True},
                   "scope": {"databases": ["app"], "tables": ["app.*"]}},
     }}}))
@@ -186,3 +186,9 @@ def test_results_bound_total_bytes_and_list_entries(tmp_path):
 def test_integer_rejects_ambiguous_and_unbounded_input(value):
     with pytest.raises(InfraError):
         integer({"count": value}, "count", 100, 0, 500)
+
+
+@pytest.mark.parametrize("allowed", ["create", ["write"], ["read"], [True], None])
+def test_invalid_approval_permissions_fail_closed(tmp_path, allowed):
+    with pytest.raises(InfraError, match="allow_after_approval"):
+        store(tmp_path, {"bad": {"allow_after_approval": allowed}}).get("redis", "bad")

@@ -107,7 +107,14 @@ class ConfigStore:
                 raise InfraError("invalid_config", "permissions must contain only boolean create/read/update/delete entries")
             permitted = frozenset(k for k, v in permissions.items() if v)
         else:
-            permitted = ACTIONS
+            permitted = frozenset({"read"})
+        after_approval = raw.get("allow_after_approval", [])
+        if not isinstance(after_approval, list) or any(
+            not isinstance(action, str) or action not in {"create", "update", "delete"}
+            for action in after_approval
+        ):
+            raise InfraError("invalid_config", "allow_after_approval must be a list of write actions")
+        permitted = permitted.union(after_approval)
         if service == "jenkins":
             grants = raw.get("capabilities", [])
             if not isinstance(grants, list) or not all(isinstance(g, str) and g in
@@ -134,7 +141,7 @@ class ConfigStore:
         for key in ("redact", "verify_tls", "tls"):
             if key in raw and type(raw[key]) is not bool:
                 raise InfraError("invalid_config", f"{key} must be a boolean")
-        options = {k: v for k, v in raw.items() if k not in {"scope", "permissions"}}
+        options = {k: v for k, v in raw.items() if k not in {"scope", "permissions", "allow_after_approval"}}
         # Clients can start the same server from different working directories.
         for key in FILE_OPTIONS & options.keys():
             value = options[key]

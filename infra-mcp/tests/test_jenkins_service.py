@@ -15,7 +15,7 @@ JOB = "test/auth"
 @pytest.fixture
 def service(tmp_path):
     config = {"url": "http://localhost:8080/ci", "username": "bot", "token_file": "api-token",
-              "targets": {JOB: TARGET}, "capabilities": ["deploy", "rollback", "cancel"],
+              "targets": {JOB: TARGET}, "allow_after_approval": ["create", "update", "delete"], "capabilities": ["deploy", "rollback", "cancel"],
               "scope": {"jobs": ["test/*"]}}
     (tmp_path / "api-token").write_text("private-example")
     path = tmp_path / "profiles.json"

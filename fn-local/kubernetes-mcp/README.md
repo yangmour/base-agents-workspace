@@ -2,6 +2,8 @@
 
 `infra-mcp-system/kubernetes-mcp` 使用项目的 stdio 服务，每个通过双向 TLS 验证的客户端独占一个 MCP 会话。监听地址为 Pod 内的 `127.0.0.1:9443`。Mac 上独立的 LaunchAgent 通过 Kubernetes API 的加密通道将它转发到 `127.0.0.1:19443`。DSH 和 Codex 的 `infra-kubernetes` 条目从 PATH 运行 `infra-kubernetes-client`。连接名沿用 `fn-k8s-kubernetes`。
 
+Mac 启动脚本依赖新版 `infra-mcp`。工具发现使用本地固定接口，读取按次建立上游会话，响应返回后立即释放；客户端空闲时不占用 Pod 的 8 个会话名额。Pod 最多再接纳 8 个排队连接，等待上限 15 秒，双向静默 5 分钟后回收会话。经隧道接入的 Codex 条目使用 `startup_timeout_sec = 35`，覆盖启动、排队和工具发现。每次写入先在 Mac 上显示具体参数，点击「允许本次」后通过单独的会话发送。即使 Pod 仍是旧版本，Mac 入口也会检查确认。集群 Role 和发布凭据继续限制实际可用操作。
+
 Pod 中的 kubeconfig 通过 `tokenFile` 引用整卷挂载的 projected ServiceAccount token。请求寿命为 600 秒，kubelet 在到期前轮换，每次 MCP 调用启动的 kubectl 会读取当前 token。专用 RoleBinding 位于 `develop`，可读 pods、pods/log、services、events、deployments、deployments/scale 和 daemonsets。MCP profile 还限制了命名空间、资源类型和读操作。安装依赖的 init 容器只挂载应用包及临时目录。
 
 ## 部署

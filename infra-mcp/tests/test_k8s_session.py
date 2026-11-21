@@ -99,7 +99,8 @@ def test_issue_retains_independent_credential_and_actual_expiry(cli, tmp_path, h
     assert profile['kubeconfig'] == 'subadminconfig'
     assert profile['context'] == path.name
     assert profile['scope'] == {'namespaces': ['existing'], 'resources': ['configmaps']}
-    assert profile['permissions'] == dict.fromkeys(['create', 'read', 'update', 'delete'], True)
+    assert profile['permissions'] == {'read': True}
+    assert set(profile['allow_after_approval']) == {'create', 'update', 'delete'}
     assert '--duration=24h' in next(args for args, _ in cluster.calls if 'token' in args)
     assert receipt(path)['expiration_timestamp'] == cluster.expiry.isoformat()
     assert 'SECRET' not in (path / 'session.json').read_text()
@@ -475,7 +476,8 @@ def test_patch_targets_scope_role_and_profiles_by_kind(cli, tmp_path):
     for kind, names in scopes.items():
         profile = profiles['release-' + kind]
         assert profile['scope'] == {'namespaces': ['existing'], 'resources': [kind], 'names': names}
-        assert profile['permissions'] == {'read': True, 'update': True, 'create': False, 'delete': False}
+        assert profile['permissions'] == {'read': True}
+        assert profile['allow_after_approval'] == ['update']
         assert profile['kubeconfig'] == 'subadminconfig'
     assert receipt(path)['patch_targets'] == scopes
     assert cli.revoke(cluster, path)['objects_absent']
@@ -517,3 +519,40 @@ def test_patch_target_overlong_token_is_not_delivered(cli, tmp_path):
         issue(cli, tmp_path, cluster, patch_targets=['deployments/file'])
     assert not cluster.objects
     assert not list(tmp_path.rglob('subadminconfig'))
+
+
+def test_managed_higress_issuance_records_expiry_and_preserves_diagnostics(cli, tmp_path):
+    cluster = Cluster(cli)
+    cluster.expiry = TIME + dt.timedelta(hours=1)
+    call = cluster.call
+    def higress_api(args, payload=None):
+        if args == ['get', '--raw=/api/v1/namespaces/higress-system']:
+            return {'metadata': {'uid': cluster.ns_uid}}
+        return call(args, payload)
+    cluster.call = higress_api
+    report = cli.issue(cluster, tmp_path / 'sessions', 'higress-system',
+                       patch_targets=['deployments/higress-console', 'deployments/higress-gateway',
+                                      'configmaps/higress-access-filebeat'], release_lifecycle=True)
+    path = Path(report['session_dir'])
+    info = receipt(path)
+    assert info['cleanup_on_expiry'] is True and info['requested_duration'] == '1h'
+    role = next(o for o in cluster.objects.values() if o['kind'] == 'Role')
+    assert role['rules'][-2:] == [
+        {'apiGroups': [''], 'resources': ['pods'], 'verbs': ['get', 'list']},
+        {'apiGroups': ['', 'events.k8s.io'], 'resources': ['events'], 'verbs': ['get', 'list']}]
+    assert all(rule.get('resourceNames') for rule in role['rules'] if 'patch' in rule['verbs'])
+    profiles = json.loads((path / 'client/profiles.json').read_text())['profiles']['kubernetes']
+    assert profiles['rollout-diagnostics']['allow_after_approval'] == []
+    assert set(profiles) == {'release-configmaps', 'release-deployments', 'rollout-diagnostics'}
+
+
+def test_migrated_state_alias_only_maps_to_expected_root(cli, tmp_path):
+    checkout = tmp_path / 'checkout'
+    checkout.mkdir()
+    current = tmp_path / 'state' / 'sessions'
+    current.mkdir(parents=True)
+    legacy = checkout / 'sessions'
+    legacy.symlink_to(os.path.relpath(current, checkout))
+    assert cli.operator_state_path(legacy / 'old', legacy, current) == current / 'old'
+    assert cli.operator_state_path(legacy / '..' / 'elsewhere', legacy, current) == legacy / '..' / 'elsewhere'
+    assert cli.operator_state_path(legacy / 'old', legacy, tmp_path / 'other') == legacy / 'old'

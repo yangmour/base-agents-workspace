@@ -12,7 +12,7 @@ def backend(tmp_path, monkeypatch):
     profile = {"url": "http://localhost:18082", "cluster": "Local",
                "scope": {"topics": ["app-*"], "groups": ["app-*"]}}
     conf.write_text(json.dumps({"profiles": {"rocketmq": {
-        "full": profile, "create-only": {**profile, "permissions": {"create": True}},
+        "full": {**profile, "allow_after_approval": ["create", "update", "delete"]}, "create-only": {**profile, "permissions": {"create": True}},
         "update-only": {**profile, "permissions": {"update": True}},
     }}}))
     calls = []

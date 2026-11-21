@@ -48,7 +48,7 @@ async def exercise(args, config_path, prefix, direct, checks, cleanup):
     # Backend stderr can contain arbitrary dependency text; never print or retain it.
     with open(os.devnull, "w") as error_log:
         async with stdio_client(parameters, errlog=error_log) as (read_stream, write_stream):
-            async with ClientSession(read_stream, write_stream, read_timeout_seconds=timedelta(seconds=15)) as session:
+            async with ClientSession(read_stream, write_stream, read_timeout_seconds=timedelta(seconds=150)) as session:
                 await session.initialize()
                 check("MCP initialize", True)
 
@@ -80,7 +80,7 @@ async def exercise(args, config_path, prefix, direct, checks, cleanup):
                 listing = await call("list_connections")
                 profiles = {profile["name"]: profile for profile in listing["connections"]}
                 check("list_connections: isolated profiles and scope", set(profiles) == {"local-test", "local-readonly", "local-update-only"} and all(profile["scope"] == {"key_patterns": [prefix + "*"]} for profile in profiles.values()))
-                check("list_connections: no connection credentials", all(set(profile) == {"name", "environment", "permissions", "scope"} for profile in profiles.values()))
+                check("list_connections: no connection credentials", all(set(profile) == {"name", "environment", "permissions", "allow_after_approval", "scope"} for profile in profiles.values()))
                 listing = await call("list_operations")
                 check("list_operations: CRUD and hash operations", {"create", "get", "update", "ttl", "delete", "hash_set", "hash_delete", "read_collection"} <= set(listing["operations"]))
                 check("check_connection: PING", (await call("check_connection"))["data"] == {"reachable": True})

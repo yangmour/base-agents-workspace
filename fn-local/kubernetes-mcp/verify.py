@@ -21,7 +21,8 @@ async def main():
                 return json.loads(result.content[0].text)
 
             connections = (await call("list_connections"))["connections"]
-            assert len(connections) == 1 and connections[0]["name"] == NAME
+            connections = [p for p in connections if p["name"] == NAME]
+            assert len(connections) == 1
             assert connections[0]["permissions"] == {"read": True, "create": False, "update": False, "delete": False}
             assert connections[0]["scope"]["namespaces"] == ["develop"]
             await call("list_operations")
@@ -31,8 +32,7 @@ async def main():
             print("develop deployments:", len(result["data"]["items"]))
             for tool, operation, error, args in [
                 ("read", "list", "scope_denied", {"resource": "pods", "namespace": "default"}),
-                ("update", "patch", "permission_denied", {"resource": "deployments", "namespace": "develop",
-                                     "name": "mcp-permission-check", "patch": {}}),
+                ("read", "patch", "permission_denied", {"resource": "deployments", "namespace": "develop"}),
             ]:
                 denial = await session.call_tool(tool, {"connection": NAME, "operation": operation, "arguments": args})
                 assert denial.isError and error in denial.content[0].text, denial.content[0].text

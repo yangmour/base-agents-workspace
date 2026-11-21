@@ -369,9 +369,11 @@ def group_patch_targets(targets):
     return grouped
 
 
-def issue(backend, state_root, namespace, resources=None, permissions=None, *, patch_targets=None):
+def issue(backend, state_root, namespace, resources=None, permissions=None, *, patch_targets=None, release_lifecycle=False):
     if not NAME_RE.fullmatch(namespace):
         raise SessionError('Invalid namespace name')
+    if release_lifecycle and not patch_targets:
+        raise SessionError('A managed release requires named patch targets')
     targets = {}
     if patch_targets is not None:
         if resources is not None or permissions is not None:
@@ -380,6 +382,10 @@ def issue(backend, state_root, namespace, resources=None, permissions=None, *, p
         resources, permissions = list(targets), ['read', 'update']
         rules = [{'apiGroups': [RESOURCE_GROUPS[kind]], 'resources': [kind],
                   'resourceNames': names, 'verbs': ['get', 'patch']} for kind, names in targets.items()]
+        diagnostics = release_lifecycle and namespace == 'higress-system'
+        if diagnostics:
+            rules.extend([{'apiGroups': [''], 'resources': ['pods'], 'verbs': ['get', 'list']},
+                          {'apiGroups': ['', 'events.k8s.io'], 'resources': ['events'], 'verbs': ['get', 'list']}])
         hours = 1
     else:
         resources = selected(['configmaps'] if resources is None else resources, RESOURCE_GROUPS, 'resources')
@@ -409,6 +415,8 @@ def issue(backend, state_root, namespace, resources=None, permissions=None, *, p
             'nonce': nonce, 'context': context, 'cluster_fingerprint': fingerprint,
             'created_at': now().isoformat(), 'requested_duration': f'{hours}h', 'expiration_timestamp': None,
             'state': 'issuing', 'resources': resources, 'permissions': permissions, 'objects': {}}
+    if release_lifecycle:
+        data['cleanup_on_expiry'] = True
     if targets:
         data['patch_targets'] = targets
     with session_lock(path):
@@ -463,13 +471,17 @@ def issue(backend, state_root, namespace, resources=None, permissions=None, *, p
                      'users': [{'name': name, 'user': {'token': token}}],
                      'contexts': [{'name': name, 'context': {'cluster': 'session-cluster', 'user': name, 'namespace': namespace}}]}
             profile = {'kubeconfig': 'subadminconfig', 'context': name, 'timeout': 20,
-                       'permissions': {key: key in permissions for key in PERMISSIONS},
+                       'permissions': {'read': 'read' in permissions},
+                       'allow_after_approval': [key for key in permissions if key != 'read'],
                        'scope': {'namespaces': [namespace], 'resources': resources}}
             profiles = {'session': profile}
             if targets:
                 profiles = {'release-' + kind: {**profile, 'scope': {
                     'namespaces': [namespace], 'resources': [kind], 'names': names}}
                     for kind, names in targets.items()}
+                if diagnostics:
+                    profiles['rollout-diagnostics'] = {**profile, 'permissions': {'read': True},
+                        'allow_after_approval': [], 'scope': {'namespaces': [namespace], 'resources': ['pods', 'events']}}
             private_json(client / 'subadminconfig', child)
             private_json(client / 'profiles.json', {'profiles': {'kubernetes': profiles}})
             data['state'] = 'active'
@@ -532,7 +544,22 @@ def cleanup_expired(backend, state_root):
     return result
 
 
+def operator_state_path(path, legacy, current):
+    # An explicitly migrated legacy root is a lookup alias only. The normal
+    # ownership and no-symlink checks still apply to every actual state path.
+    path = path.expanduser().absolute()
+    if legacy.is_symlink() and path.is_relative_to(legacy) and '..' not in path.parts:
+        target = Path(os.path.normpath(legacy.parent / legacy.readlink()))
+        if target == current:
+            return current / path.relative_to(legacy)
+    return path
+
+
 def main(argv=None):
+    legacy = ROOT / 'sessions'
+    current = (Path(os.environ.get('XDG_STATE_HOME') or Path.home() / '.local/state').expanduser().absolute()
+               / 'infra-mcp/sessions')
+    default_root = legacy if legacy.is_dir() and not legacy.is_symlink() else current
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
     for command in ('issue', 'status', 'revoke', 'cleanup-expired'):
@@ -543,7 +570,7 @@ def main(argv=None):
         if command in ('status', 'revoke'):
             sub.add_argument('--session-dir', required=True, type=Path)
         else:
-            sub.add_argument('--state-root', default=ROOT / 'sessions', type=Path)
+            sub.add_argument('--state-root', default=default_root, type=Path)
         if command == 'issue':
             sub.add_argument('--namespace', required=True)
             sub.add_argument('--resources')
@@ -551,6 +578,9 @@ def main(argv=None):
             sub.add_argument('--patch-target', action='append', metavar='KIND/NAME',
                              help=f'One-hour get/patch access; kinds: {", ".join(PATCH_KINDS)}; repeat per target')
     args = parser.parse_args(argv)
+    for field in ('session_dir', 'state_root'):
+        if hasattr(args, field):
+            setattr(args, field, operator_state_path(getattr(args, field), legacy, current))
     try:
         if args.command == 'status':
             result = status(args.session_dir)

@@ -50,3 +50,19 @@ python3 scripts/k8s-session.py revoke --admin-config "$ADMIN_CONFIG" --context "
 ```
 
 确认回收后移除 Mac 上对应的子配置副本。客户端空目录不会回退到管理员 kubeconfig。
+
+## 在 Mac 上通过 MCP 签发与回收
+
+运行 `python3 install-release-issuer.py --admin-config <管理员配置> --context <目标上下文>`，安装器会比对管理员上下文与现有隧道的集群标识。在 `infra-kubernetes` 中选择 `release-issuer` 连接。签发器运行在本机，管理员配置由独立进程读取，MCP 调用只接收会话标识、授权对象和期限。Codex 的 `infra-kubernetes` 条目使用 `tool_timeout_sec = 300`，为人工确认和签发留出时间。
+
+| 工具 | 操作 | 参数 |
+|---|---|---|
+| `read` | `list_release_credentials` | 无 |
+| `create` | `issue_release_credential` | `release` 取 `develop` 或 `higress-system` |
+| `delete` | `delete_expired_release_credential` | `session` 取清单中的已过期会话标识 |
+
+签发前，Mac 会显示具名对象、有效期、当前会话和到期回收安排。点「允许本次」才会签发并切换对应发布入口。一小时凭据只允许获取和修补上表的具名对象；Higress 另有本命名空间 Pod 和事件的只读诊断。签发确认同时授权到期回收该会话的本机凭据和专属集群对象。
+
+Mac 用户登录时，`com.xiwen.kubernetes-release-expiry` 每分钟按签发回执检查到期时间。Mac 离线时，令牌按集群签发期限失效，恢复连接后再回收集群对象。回收会校验集群、命名空间和对象 UID，保留签发回执以便审计和重试。手动删除已过期会话时也会单独显示确认。
+
+安装器将签发脚本复制到 `${XDG_DATA_HOME:-$HOME/.local/share}/infra-mcp/issuer`。启动器从自身目录定位解释器和脚本。签发器与发布客户端共用 `FN_MCP_RELEASE_DIR`，签发回执位于 `${XDG_STATE_HOME:-$HOME/.local/state}/infra-mcp/release-sessions`。更新签发脚本后重新运行安装器。

@@ -23,14 +23,14 @@ Redis、RabbitMQ、Elasticsearch、Kubernetes、Nacos 3.x、MySQL、RocketMQ、J
 uv tool install .
 uv tool update-shell
 
-config_dir="$HOME/.config/infra-mcp"
+config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/infra-mcp"
 mkdir -p "$config_dir"
 if [ ! -e "$config_dir/profiles.json" ]; then
   (umask 077 && cp profiles.example.json "$config_dir/profiles.json")
 fi
 ```
 
-编辑 `$HOME/.config/infra-mcp/profiles.json`，填写实际地址、连接名、凭据引用和权限。
+编辑该目录下的 `profiles.json`，填写实际地址、连接名、凭据引用和权限。
 密码使用 `password_env` 或 `password_file`。密码文件、令牌文件、`ca_file` 和 `kubeconfig` 的相对路径以配置文件所在目录为基准，也可使用绝对路径或 `~/`。
 例如，`.secrets/mysql-password` 指向配置文件旁的 `.secrets` 目录。跨客户端共用时可使用这些私有文件引用。[配置示例](profiles.example.json)
 
@@ -142,9 +142,9 @@ env:
 }
 ```
 
-- 省略 `permissions`：默认增删改查全部允许。
-- 提供该对象：未列出的项关闭。`{"read": true}` 为只读，`{}` 为全部关闭。
-- 禁止删除：`{"create": true, "read": true, "update": true, "delete": false}`。
+- 默认只读。用 `"permissions": {"read": true}, "allow_after_approval": ["create", "update", "delete"]` 指定该连接可以申请的写操作。只读连接省略 `allow_after_approval`。部署到仍运行旧版本的环境时保留显式的只读 `permissions`。
+- 每次写入会显示服务、连接、操作及参数。Mac 上由系统对话框提供「拒绝」和「允许本次」，默认选中「拒绝」。远程服务使用 MCP 确认表单，客户端必须把决定交给操作人。取消、超时（120 秒）或确认界面不可用时终止写入。每次重试重新确认。
+- 旧配置中显式启用的写权限在新版中也需要逐次确认。`list_connections` 的 `permissions` 表示无需确认的权限，`allow_after_approval` 表示可逐次申请的权限。升级时也应把旧配置中的写权限移入新字段，使尚未重启的旧进程只能读。
 - 配置每次调用重新读取；已开始执行的调用使用当次读取的权限。
 - `check_connection` 需要 read；连接和操作清单只展示元数据。
 - 权限控制 MCP 发出的操作，后端账号仍需实际权限；MCP 开关不会授予数据库或集群权限。
@@ -312,7 +312,7 @@ namespace 必须已存在。在项目目录运行，先把 `ADMIN_CONFIG` 设置
 
 ```bash
 : "${ADMIN_CONFIG:?请先设置管理员 kubeconfig 路径}"
-STATE_ROOT="${STATE_ROOT:-$(pwd -P)/sessions}"
+STATE_ROOT="${STATE_ROOT:-${XDG_STATE_HOME:-$HOME/.local/state}/infra-mcp/sessions}"
 
 .venv/bin/python scripts/k8s-session.py issue \
   --admin-config "$ADMIN_CONFIG" \

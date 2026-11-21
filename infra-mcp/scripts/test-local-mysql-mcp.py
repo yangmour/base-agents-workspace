@@ -97,7 +97,7 @@ def profiles_for(schema, port):
     options = {"host": "127.0.0.1", "port": port, "username": "root", "password_env": SECRET_ENV,
         "database": schema, "tls": False, "timeout": 3, "environment": "local-disposable-test",
         "scope": {"databases": [schema], "tables": [schema + ".*"]}}
-    profiles = {"local-test": options}
+    profiles = {"local-test": {**options, "allow_after_approval": ["create", "update", "delete"]}, "default": options}
     for disabled in ACTIONS:
         profiles["deny-" + disabled] = {**options, "permissions": {action: action != disabled for action in ACTIONS}}
     profiles["items-only"] = {**options, "scope": {"databases": [schema], "tables": [schema + ".items"]}}
@@ -116,7 +116,7 @@ async def exercise(config, password, schema, admin, port, checks):
         env={"PYTHONPATH": str(ROOT / "src"), SECRET_ENV: password})
     with open(os.devnull, "w") as errors:
         async with stdio_client(params, errlog=errors) as (reader, writer):
-            async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=15)) as session:
+            async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=150)) as session:
                 await session.initialize()
                 check("Real stdio initialize", True)
 
@@ -144,9 +144,9 @@ async def exercise(config, password, schema, admin, port, checks):
                 tools = (await session.list_tools()).tools
                 check("Exactly seven fixed tools", {tool.name for tool in tools} == {"list_connections", "list_operations", "check_connection", *ACTIONS})
                 connections = await call("list_connections")
-                check("Connection discovery exposes no options or credentials", all(set(item) == {"name", "environment", "permissions", "scope"} for item in connections["connections"]))
-                default = next(item for item in connections["connections"] if item["name"] == "local-test")
-                check("Omitted permissions default to all four CRUD actions", default["permissions"] == {action: True for action in ACTIONS})
+                check("Connection discovery exposes no options or credentials", all(set(item) == {"name", "environment", "permissions", "allow_after_approval", "scope"} for item in connections["connections"]))
+                default = next(item for item in connections["connections"] if item["name"] == "default")
+                check("Omitted permissions default to read only", default["permissions"] == {action: action == "read" for action in ACTIONS})
                 operations = (await call("list_operations"))["operations"]
                 check("Eight structured operations and no SQL or DDL operation", set(operations) == {"check_connection", "list_databases", "list_tables", "describe_table", "select_rows", "insert_row", "update_row", "delete_row"})
                 check("Authenticated MySQL check", (await call("check_connection"))["data"] == {"reachable": True})

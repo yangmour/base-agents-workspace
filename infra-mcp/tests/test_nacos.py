@@ -13,6 +13,7 @@ def service(tmp_path, monkeypatch, responder=None, **options):
     assert importlib.util.find_spec('infra_mcp.nacos_service'), 'Nacos adapter is not implemented'
     from infra_mcp.nacos_service import NacosService
     path = tmp_path / 'config.json'
+    options.setdefault('permissions', dict.fromkeys(('read', 'create', 'update', 'delete'), True))
     path.write_text(json.dumps({'profiles': {'nacos': {'test': {
         'url': 'http://localhost:8848/nacos', **options}}}}))
     requests = []

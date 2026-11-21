@@ -86,8 +86,8 @@ class BaseService:
 
     def connection_metadata(self, profile: Profile) -> dict:
         return {"name": profile.name, "environment": profile.options.get("environment", ""),
-                "permissions": {action: action in profile.permissions for action in sorted(ACTIONS)},
-                "scope": profile.scope}
+                "permissions": {action: action == "read" and action in profile.permissions for action in sorted(ACTIONS)},
+                "allow_after_approval": sorted(profile.permissions - {"read"}), "scope": profile.scope}
 
     def list_operations(self) -> dict:
         return {"operations": {name: {"action": op.action, "description": op.description,
@@ -95,7 +95,7 @@ class BaseService:
                                        "additional_permissions": list(op.additional_permissions)}
                                for name, op in self.operations.items()}}
 
-    def run(self, connection: str, action: str, operation: str, arguments: dict | None = None) -> dict:
+    def authorize(self, connection: str, action: str, operation: str, arguments: dict | None) -> Profile:
         if not isinstance(operation, str) or operation not in self.operations:
             raise InfraError("invalid_operation", "Unknown operation; use list_operations first")
         op = self.operations[operation]
@@ -108,6 +108,13 @@ class BaseService:
             profile.require(extra)
         if arguments is not None and not isinstance(arguments, dict):
             raise InfraError("invalid_argument", "arguments must be a JSON object")
+        return profile
+
+    def run(self, connection: str, action: str, operation: str, arguments: dict | None = None,
+            *, expected_profile: Profile | None = None) -> dict:
+        profile = self.authorize(connection, action, operation, arguments)
+        if expected_profile is not None and profile != expected_profile:
+            raise InfraError("approval_expired", "Connection settings changed; submit a new request")
         try:
             value = self.execute(profile, operation, arguments or {})
             data, truncated, redacted = bounded_data(value, profile)
